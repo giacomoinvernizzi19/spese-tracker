@@ -6,7 +6,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "deploy": "dotenv -o -- npx wrangler deploy",
+    "wrangler": "dotenv -o -- npx wrangler"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
@@ -21,6 +23,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6"
+    "@types/bcryptjs": "^2.4.6",
+    "dotenv-cli": "^11.0.0"
   }
 }
