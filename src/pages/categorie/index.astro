@@ -1,0 +1,276 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+---
+
+<AppLayout title="Categorie" activeNav="categories">
+  <!-- Add Category Button -->
+  <button
+    id="addCategoryBtn"
+    class="w-full mb-6 py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors"
+  >
+    + Nuova Categoria
+  </button>
+
+  <!-- Categories List -->
+  <div id="categoriesList" class="space-y-3">
+    <!-- Populated by JS -->
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="categoryModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 m-4 max-w-md w-full">
+      <h3 class="text-xl font-bold mb-4" id="modalTitle">Nuova Categoria</h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+          <input
+            type="text"
+            id="categoryName"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="es. Abbonamenti"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sottocategoria di (opzionale)</label>
+          <select
+            id="parentCategory"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">- Categoria principale -</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Icona</label>
+          <div class="grid grid-cols-8 gap-2" id="iconPicker">
+            {['🛒', '🍕', '🚗', '🏠', '💊', '☕', '🎁', '✈️', '📱', '🏃', '👗', '📦', '🎬', '📚', '🎮', '💇'].map(icon => (
+              <button
+                type="button"
+                class="icon-btn w-10 h-10 text-xl rounded-lg border border-gray-200 hover:border-blue-500"
+                data-icon={icon}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Colore</label>
+          <div class="grid grid-cols-8 gap-2" id="colorPicker">
+            {['#22C55E', '#F97316', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#EF4444', '#06B6D4', '#6366F1', '#10B981', '#D946EF', '#6B7280'].map(color => (
+              <button
+                type="button"
+                class="color-btn w-10 h-10 rounded-lg border-2 border-transparent hover:border-gray-400"
+                style={`background-color: ${color}`}
+                data-color={color}
+              ></button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button
+          id="cancelBtn"
+          class="flex-1 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50"
+        >
+          Annulla
+        </button>
+        <button
+          id="saveBtn"
+          class="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+        >
+          Salva
+        </button>
+      </div>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  let categories: any[] = [];
+  let flatCategories: any[] = [];
+  let selectedIcon = '📦';
+  let selectedColor = '#6B7280';
+  let editingId: number | null = null;
+  let selectedParentId: number | null = null;
+
+  async function loadCategories() {
+    try {
+      // Carica formato gerarchico per la visualizzazione
+      const res = await fetch('/api/categories?hierarchical=true');
+      categories = await res.json();
+
+      // Carica anche formato piatto per il select parent
+      const flatRes = await fetch('/api/categories');
+      flatCategories = await flatRes.json();
+
+      renderCategories();
+      populateParentSelect();
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  }
+
+  function populateParentSelect() {
+    const select = document.getElementById('parentCategory') as HTMLSelectElement;
+    // Mostra solo categorie root (senza parent_id)
+    const rootCategories = flatCategories.filter(c => !c.parent_id);
+    select.innerHTML = '<option value="">- Categoria principale -</option>' +
+      rootCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  }
+
+  function renderCategories() {
+    const container = document.getElementById('categoriesList')!;
+
+    container.innerHTML = categories.map(cat => `
+      <div class="space-y-2">
+        <!-- Categoria Parent -->
+        <div class="bg-white rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+            style="background-color: ${cat.color}20"
+          >
+            ${cat.icon}
+          </div>
+          <div class="flex-1">
+            <div class="font-medium text-gray-900">${cat.name}</div>
+            ${cat.children?.length ? `<div class="text-xs text-gray-500">${cat.children.length} sottocategorie</div>` : ''}
+          </div>
+          <button
+            class="edit-btn p-2 text-gray-400 hover:text-blue-600"
+            data-id="${cat.id}"
+            data-name="${cat.name}"
+            data-icon="${cat.icon}"
+            data-color="${cat.color}"
+            data-parent-id=""
+          >
+            ✏️
+          </button>
+        </div>
+
+        <!-- Sottocategorie (indentate) -->
+        ${cat.children?.map((sub: any) => `
+          <div class="bg-white rounded-xl p-3 shadow-sm flex items-center gap-3 ml-6 border-l-4" style="border-color: ${sub.color}">
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+              style="background-color: ${sub.color}20"
+            >
+              ${sub.icon}
+            </div>
+            <div class="flex-1">
+              <div class="font-medium text-gray-900 text-sm">${sub.name}</div>
+            </div>
+            <button
+              class="edit-btn p-2 text-gray-400 hover:text-blue-600"
+              data-id="${sub.id}"
+              data-name="${sub.name}"
+              data-icon="${sub.icon}"
+              data-color="${sub.color}"
+              data-parent-id="${cat.id}"
+            >
+              ✏️
+            </button>
+          </div>
+        `).join('') || ''}
+      </div>
+    `).join('');
+
+    // Add edit handlers
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLElement;
+        editingId = parseInt(target.dataset.id!);
+        (document.getElementById('categoryName') as HTMLInputElement).value = target.dataset.name!;
+        selectedIcon = target.dataset.icon!;
+        selectedColor = target.dataset.color!;
+        selectedParentId = target.dataset.parentId ? parseInt(target.dataset.parentId) : null;
+        (document.getElementById('parentCategory') as HTMLSelectElement).value = selectedParentId?.toString() || '';
+        updateSelections();
+        document.getElementById('modalTitle')!.textContent = 'Modifica Categoria';
+        openModal();
+      });
+    });
+  }
+
+  function openModal() {
+    document.getElementById('categoryModal')!.classList.remove('hidden');
+    document.getElementById('categoryModal')!.classList.add('flex');
+  }
+
+  function closeModal() {
+    document.getElementById('categoryModal')!.classList.add('hidden');
+    document.getElementById('categoryModal')!.classList.remove('flex');
+    editingId = null;
+    selectedParentId = null;
+    (document.getElementById('categoryName') as HTMLInputElement).value = '';
+    (document.getElementById('parentCategory') as HTMLSelectElement).value = '';
+    selectedIcon = '📦';
+    selectedColor = '#6B7280';
+    updateSelections();
+    document.getElementById('modalTitle')!.textContent = 'Nuova Categoria';
+  }
+
+  function updateSelections() {
+    document.querySelectorAll('.icon-btn').forEach(btn => {
+      const icon = (btn as HTMLElement).dataset.icon;
+      btn.classList.toggle('border-blue-500', icon === selectedIcon);
+      btn.classList.toggle('bg-blue-50', icon === selectedIcon);
+    });
+
+    document.querySelectorAll('.color-btn').forEach(btn => {
+      const color = (btn as HTMLElement).dataset.color;
+      btn.classList.toggle('border-gray-800', color === selectedColor);
+      btn.classList.toggle('ring-2', color === selectedColor);
+      btn.classList.toggle('ring-offset-2', color === selectedColor);
+    });
+  }
+
+  // Event listeners
+  document.getElementById('addCategoryBtn')?.addEventListener('click', openModal);
+  document.getElementById('cancelBtn')?.addEventListener('click', closeModal);
+  document.getElementById('categoryModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  document.querySelectorAll('.icon-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedIcon = (btn as HTMLElement).dataset.icon!;
+      updateSelections();
+    });
+  });
+
+  document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedColor = (btn as HTMLElement).dataset.color!;
+      updateSelections();
+    });
+  });
+
+  document.getElementById('saveBtn')?.addEventListener('click', async () => {
+    const name = (document.getElementById('categoryName') as HTMLInputElement).value.trim();
+    if (!name) return alert('Inserisci un nome');
+
+    try {
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId ? `/api/categories/${editingId}` : '/api/categories';
+
+      await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, icon: selectedIcon, color: selectedColor, parent_id: selectedParentId })
+      });
+
+      closeModal();
+      loadCategories();
+    } catch (error) {
+      console.error('Error saving category:', error);
+    }
+  });
+
+  loadCategories();
+  updateSelections();
+</script>

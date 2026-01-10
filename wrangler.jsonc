@@ -1,0 +1,23 @@
+{
+	"main": "dist/_worker.js/index.js",
+	"name": "spese-tracker",
+	"compatibility_date": "2026-01-04",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"binding": "ASSETS",
+		"directory": "./dist"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "spese-tracker-db",
+			"database_id": "cb795d69-0853-4c77-98c3-a294bcbbe5a4"
+		}
+	]
+}

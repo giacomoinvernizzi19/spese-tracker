@@ -1,0 +1,390 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout title="Report" activeNav="report">
+  <!-- Year Selector -->
+  <div class="bg-white rounded-xl p-4 shadow-sm mb-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-bold">Report Annuale</h2>
+      <select id="yearSelect" class="px-4 py-2 border border-gray-300 rounded-lg font-semibold">
+        <option value="">Caricamento...</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div id="section-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl p-4 shadow-sm">
+      <p class="text-gray-500 text-sm">Totale Spese</p>
+      <p id="totalExpenses" class="text-2xl font-bold text-red-600">-</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm">
+      <p class="text-gray-500 text-sm">Totale Entrate</p>
+      <p id="totalIncome" class="text-2xl font-bold text-green-600">-</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm">
+      <p class="text-gray-500 text-sm">Media Mensile</p>
+      <p id="monthlyAvg" class="text-2xl font-bold text-gray-800">-</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 shadow-sm">
+      <p class="text-gray-500 text-sm">vs Anno Prec.</p>
+      <p id="yearDiff" class="text-2xl font-bold">-</p>
+    </div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="grid lg:grid-cols-2 gap-6 mb-6">
+    <!-- Monthly Trend -->
+    <div id="section-monthly" class="bg-white rounded-xl p-6 shadow-sm">
+      <h3 class="font-semibold mb-4">Andamento Mensile</h3>
+      <div id="monthlyChartContainer" class="h-64">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+      <div id="monthlyNoData" class="hidden h-64 flex items-center justify-center text-gray-400">
+        <div class="text-center">
+          <div class="text-3xl mb-2">📊</div>
+          <p class="text-sm">Nessun dato disponibile</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div id="section-categories" class="bg-white rounded-xl p-6 shadow-sm">
+      <h3 class="font-semibold mb-4">Spese per Categoria</h3>
+      <div id="categoryChartContainer" class="h-64">
+        <canvas id="categoryChart"></canvas>
+      </div>
+      <div id="categoryNoData" class="hidden h-64 flex items-center justify-center text-gray-400">
+        <div class="text-center">
+          <div class="text-3xl mb-2">📊</div>
+          <p class="text-sm">Nessun dato disponibile</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2 -->
+  <div class="grid lg:grid-cols-2 gap-6 mb-6">
+    <!-- Daily Average -->
+    <div id="section-dailyavg" class="bg-white rounded-xl p-6 shadow-sm">
+      <h3 class="font-semibold mb-4">Media Giornaliera per Mese</h3>
+      <div id="dailyAvgChartContainer" class="h-64">
+        <canvas id="dailyAvgChart"></canvas>
+      </div>
+      <div id="dailyAvgNoData" class="hidden h-64 flex items-center justify-center text-gray-400">
+        <div class="text-center">
+          <div class="text-3xl mb-2">📊</div>
+          <p class="text-sm">Nessun dato disponibile</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Year Comparison -->
+    <div id="section-yearcompare" class="bg-white rounded-xl p-6 shadow-sm">
+      <h3 class="font-semibold mb-4">Confronto Annuale</h3>
+      <div id="yearCompareChartContainer" class="h-64">
+        <canvas id="yearCompareChart"></canvas>
+      </div>
+      <div id="yearCompareNoData" class="hidden h-64 flex items-center justify-center text-gray-400">
+        <div class="text-center">
+          <div class="text-3xl mb-2">📅</div>
+          <p class="text-sm">Servono almeno 2 anni di dati</p>
+          <p class="text-xs mt-1">per mostrare il confronto</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Expenses Table -->
+  <div id="section-topexpenses" class="bg-white rounded-xl p-6 shadow-sm mb-6">
+    <h3 class="font-semibold mb-4">Top 10 Spese dell'Anno</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left">#</th>
+            <th class="px-4 py-3 text-left">Data</th>
+            <th class="px-4 py-3 text-left">Categoria</th>
+            <th class="px-4 py-3 text-left">Descrizione</th>
+            <th class="px-4 py-3 text-right">Importo</th>
+          </tr>
+        </thead>
+        <tbody id="topExpensesTable"></tbody>
+      </table>
+    </div>
+    <div id="topExpensesNoData" class="hidden py-8 text-center text-gray-400">
+      <div class="text-3xl mb-2">📭</div>
+      <p class="text-sm">Nessuna spesa registrata</p>
+    </div>
+  </div>
+
+  <!-- Category Details -->
+  <div id="section-categorydetails" class="bg-white rounded-xl p-6 shadow-sm">
+    <h3 class="font-semibold mb-4">Dettaglio Categorie</h3>
+    <div id="categoryDetails" class="space-y-3"></div>
+    <div id="categoryDetailsNoData" class="hidden py-8 text-center text-gray-400">
+      <div class="text-3xl mb-2">📁</div>
+      <p class="text-sm">Nessuna categoria con spese</p>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  import Chart from 'chart.js/auto';
+
+  let monthlyChart: Chart | null = null;
+  let categoryChart: Chart | null = null;
+  let dailyAvgChart: Chart | null = null;
+  let yearCompareChart: Chart | null = null;
+
+  const yearSelect = document.getElementById('yearSelect') as HTMLSelectElement;
+
+  // Load report visibility settings
+  function getVisibleSections(): Record<string, boolean> {
+    try {
+      const saved = localStorage.getItem('reportSections');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      summary: true,
+      monthly: true,
+      categories: true,
+      dailyavg: true,
+      yearcompare: true,
+      topexpenses: true,
+      categorydetails: true
+    };
+  }
+
+  function applyVisibility() {
+    const sections = getVisibleSections();
+    Object.entries(sections).forEach(([key, visible]) => {
+      const el = document.getElementById(`section-${key}`);
+      if (el) {
+        el.style.display = visible ? '' : 'none';
+      }
+    });
+  }
+
+  // Apply visibility on load
+  applyVisibility();
+
+  // Listen for settings changes
+  window.addEventListener('reportSettingsChanged', () => {
+    applyVisibility();
+  });
+
+  async function loadReport(year?: string) {
+    const url = year ? `/api/reports?year=${year}` : '/api/reports';
+    const res = await fetch(url);
+    const data = await res.json();
+
+    // Populate year selector
+    if (data.availableYears?.length) {
+      yearSelect.innerHTML = data.availableYears
+        .map((y: string) => `<option value="${y}" ${y === data.year ? 'selected' : ''}>${y}</option>`)
+        .join('');
+    } else {
+      yearSelect.innerHTML = `<option value="${data.year}">${data.year}</option>`;
+    }
+
+    // Calculate totals
+    const totalExpenses = data.monthly?.reduce((sum: number, m: any) => sum + (m.expenses || 0), 0) || 0;
+    const totalIncome = data.monthly?.reduce((sum: number, m: any) => sum + (m.income || 0), 0) || 0;
+    const monthlyAvg = data.monthly?.length ? totalExpenses / data.monthly.length : 0;
+
+    document.getElementById('totalExpenses')!.textContent = `€${totalExpenses.toFixed(2)}`;
+    document.getElementById('totalIncome')!.textContent = `€${totalIncome.toFixed(2)}`;
+    document.getElementById('monthlyAvg')!.textContent = `€${monthlyAvg.toFixed(2)}`;
+
+    // Year comparison
+    const currentYearData = data.yearComparison?.find((y: any) => y.year === data.year);
+    const prevYearData = data.yearComparison?.find((y: any) => y.year !== data.year);
+
+    if (currentYearData && prevYearData && prevYearData.expenses > 0) {
+      const diff = currentYearData.expenses - prevYearData.expenses;
+      const diffPercent = ((diff / prevYearData.expenses) * 100).toFixed(1);
+      const diffEl = document.getElementById('yearDiff')!;
+      if (diff > 0) {
+        diffEl.textContent = `+${diffPercent}%`;
+        diffEl.className = 'text-2xl font-bold text-red-600';
+      } else {
+        diffEl.textContent = `${diffPercent}%`;
+        diffEl.className = 'text-2xl font-bold text-green-600';
+      }
+    } else {
+      document.getElementById('yearDiff')!.textContent = '-';
+    }
+
+    // Monthly Chart
+    if (monthlyChart) monthlyChart.destroy();
+    const hasMonthlyData = data.monthly?.length > 0;
+    document.getElementById('monthlyChartContainer')!.style.display = hasMonthlyData ? '' : 'none';
+    document.getElementById('monthlyNoData')!.classList.toggle('hidden', hasMonthlyData);
+
+    if (hasMonthlyData) {
+      monthlyChart = new Chart(document.getElementById('monthlyChart') as HTMLCanvasElement, {
+        type: 'bar',
+        data: {
+          labels: data.monthly.map((m: any) => m.month),
+          datasets: [
+            {
+              label: 'Spese',
+              data: data.monthly.map((m: any) => m.expenses),
+              backgroundColor: 'rgba(239, 68, 68, 0.7)',
+              borderRadius: 4
+            },
+            {
+              label: 'Entrate',
+              data: data.monthly.map((m: any) => m.income),
+              backgroundColor: 'rgba(34, 197, 94, 0.7)',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    // Category Chart
+    if (categoryChart) categoryChart.destroy();
+    const hasCategoryData = data.categories?.length > 0;
+    document.getElementById('categoryChartContainer')!.style.display = hasCategoryData ? '' : 'none';
+    document.getElementById('categoryNoData')!.classList.toggle('hidden', hasCategoryData);
+
+    if (hasCategoryData) {
+      categoryChart = new Chart(document.getElementById('categoryChart') as HTMLCanvasElement, {
+        type: 'doughnut',
+        data: {
+          labels: data.categories.map((c: any) => `${c.icon} ${c.name}`),
+          datasets: [{
+            data: data.categories.map((c: any) => c.amount),
+            backgroundColor: data.categories.map((c: any) => c.color || '#6B7280')
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right' } }
+        }
+      });
+    }
+
+    // Daily Average Chart
+    if (dailyAvgChart) dailyAvgChart.destroy();
+    const hasDailyAvgData = data.dailyAverage?.length > 0;
+    document.getElementById('dailyAvgChartContainer')!.style.display = hasDailyAvgData ? '' : 'none';
+    document.getElementById('dailyAvgNoData')!.classList.toggle('hidden', hasDailyAvgData);
+
+    if (hasDailyAvgData) {
+      dailyAvgChart = new Chart(document.getElementById('dailyAvgChart') as HTMLCanvasElement, {
+        type: 'line',
+        data: {
+          labels: data.dailyAverage.map((m: any) => m.month),
+          datasets: [{
+            label: 'Media Giornaliera',
+            data: data.dailyAverage.map((m: any) => m.avgDaily),
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    // Year Comparison Chart
+    if (yearCompareChart) yearCompareChart.destroy();
+    const hasYearCompareData = data.yearComparison?.length >= 2;
+    document.getElementById('yearCompareChartContainer')!.style.display = hasYearCompareData ? '' : 'none';
+    document.getElementById('yearCompareNoData')!.classList.toggle('hidden', hasYearCompareData);
+
+    if (hasYearCompareData) {
+      yearCompareChart = new Chart(document.getElementById('yearCompareChart') as HTMLCanvasElement, {
+        type: 'bar',
+        data: {
+          labels: data.yearComparison.map((y: any) => y.year),
+          datasets: [{
+            label: 'Spese Totali',
+            data: data.yearComparison.map((y: any) => y.expenses),
+            backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(239, 68, 68, 0.4)'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // Top Expenses Table
+    const tableBody = document.getElementById('topExpensesTable')!;
+    const hasTopExpenses = data.topExpenses?.length > 0;
+    tableBody.parentElement!.style.display = hasTopExpenses ? '' : 'none';
+    document.getElementById('topExpensesNoData')!.classList.toggle('hidden', hasTopExpenses);
+
+    if (hasTopExpenses) {
+      tableBody.innerHTML = data.topExpenses.map((t: any, i: number) => `
+        <tr class="border-t">
+          <td class="px-4 py-3 text-gray-500">${i + 1}</td>
+          <td class="px-4 py-3">${new Date(t.date).toLocaleDateString('it-IT')}</td>
+          <td class="px-4 py-3">${t.category_icon || ''} ${t.category_name || 'N/A'}</td>
+          <td class="px-4 py-3 text-gray-600">${t.description || '-'}</td>
+          <td class="px-4 py-3 text-right font-semibold text-red-600">€${t.amount.toFixed(2)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Category Details
+    const categoryDetails = document.getElementById('categoryDetails')!;
+    const hasCategoryDetails = data.categories?.length > 0;
+    categoryDetails.style.display = hasCategoryDetails ? '' : 'none';
+    document.getElementById('categoryDetailsNoData')!.classList.toggle('hidden', hasCategoryDetails);
+
+    if (hasCategoryDetails) {
+      const maxAmount = Math.max(...data.categories.map((c: any) => c.amount));
+      categoryDetails.innerHTML = data.categories.map((c: any) => {
+        const percentage = totalExpenses > 0 ? ((c.amount / totalExpenses) * 100).toFixed(1) : '0';
+        const barWidth = maxAmount > 0 ? (c.amount / maxAmount) * 100 : 0;
+        return `
+          <div class="flex items-center gap-4">
+            <span class="text-2xl w-10">${c.icon}</span>
+            <div class="flex-1">
+              <div class="flex justify-between mb-1">
+                <span class="font-medium">${c.name}</span>
+                <span class="text-gray-600">€${c.amount.toFixed(2)} (${percentage}%)</span>
+              </div>
+              <div class="bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full" style="width: ${barWidth}%; background-color: ${c.color}"></div>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">${c.count} transazioni</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // Initial load
+  loadReport();
+
+  // Year change
+  yearSelect.addEventListener('change', () => {
+    loadReport(yearSelect.value);
+  });
+</script>

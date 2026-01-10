@@ -1,0 +1,220 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout title="Impostazioni" activeNav="settings">
+  <!-- Import/Export Section -->
+  <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
+    <div class="p-4 border-b bg-gray-50">
+      <h2 class="font-bold text-lg">Dati</h2>
+    </div>
+    <div class="divide-y">
+      <a href="/importa" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📥</span>
+          <div>
+            <p class="font-medium">Importa da Excel</p>
+            <p class="text-sm text-gray-500">Carica spese da file .xlsx</p>
+          </div>
+        </div>
+        <span class="text-gray-400">→</span>
+      </a>
+
+      <button id="exportBtn" class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📤</span>
+          <div>
+            <p class="font-medium">Esporta in Excel</p>
+            <p class="text-sm text-gray-500">Scarica tutte le spese</p>
+          </div>
+        </div>
+        <span class="text-gray-400">→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Categories Section -->
+  <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
+    <div class="p-4 border-b bg-gray-50">
+      <h2 class="font-bold text-lg">Gestione</h2>
+    </div>
+    <div class="divide-y">
+      <a href="/categorie" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📁</span>
+          <div>
+            <p class="font-medium">Categorie</p>
+            <p class="text-sm text-gray-500">Gestisci le categorie di spesa</p>
+          </div>
+        </div>
+        <span class="text-gray-400">→</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Report Sections -->
+  <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
+    <div class="p-4 border-b bg-gray-50">
+      <h2 class="font-bold text-lg">Sezioni Report</h2>
+      <p class="text-sm text-gray-500 mt-1">Scegli quali grafici mostrare nella pagina Report</p>
+    </div>
+    <div class="p-4 space-y-3">
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-sm">Riepilogo (totali)</span>
+        <input type="checkbox" id="toggle-summary" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
+      </label>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-sm">Andamento Mensile</span>
+        <input type="checkbox" id="toggle-monthly" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
+      </label>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-sm">Spese per Categoria</span>
+        <input type="checkbox" id="toggle-categories" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
+      </label>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-sm">Media Giornaliera per Mese</span>
+        <input type="checkbox" id="toggle-dailyavg" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
+      </label>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-sm">Confronto Annuale</span>
+        <input type="checkbox" id="toggle-yearcompare" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
+      </label>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-sm">Top 10 Spese</span>
+        <input type="checkbox" id="toggle-topexpenses" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
+      </label>
+      <label class="flex items-center justify-between cursor-pointer">
+        <span class="text-sm">Dettaglio Categorie</span>
+        <input type="checkbox" id="toggle-categorydetails" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
+      </label>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div class="p-4 border-b bg-red-50">
+      <h2 class="font-bold text-lg text-red-700">Zona Pericolosa</h2>
+    </div>
+    <div class="divide-y">
+      <button id="deleteAllBtn" class="w-full flex items-center justify-between p-4 hover:bg-red-50 transition-colors text-left">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🗑️</span>
+          <div>
+            <p class="font-medium text-red-600">Elimina tutte le spese</p>
+            <p class="text-sm text-gray-500">Questa azione non può essere annullata</p>
+          </div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- App Info -->
+  <div class="mt-8 text-center text-sm text-gray-400">
+    <p>SpesaTracker v1.0</p>
+    <p class="mt-1">Made with ❤️ using Astro + Cloudflare</p>
+  </div>
+</AppLayout>
+
+<script>
+  import * as XLSX from 'xlsx';
+
+  // Report sections management
+  const sectionKeys = ['summary', 'monthly', 'categories', 'dailyavg', 'yearcompare', 'topexpenses', 'categorydetails'];
+
+  function loadReportSettings(): Record<string, boolean> {
+    try {
+      const saved = localStorage.getItem('reportSections');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    // Default: all visible
+    return Object.fromEntries(sectionKeys.map(k => [k, true]));
+  }
+
+  function saveReportSettings(settings: Record<string, boolean>) {
+    localStorage.setItem('reportSections', JSON.stringify(settings));
+  }
+
+  // Initialize checkboxes
+  const settings = loadReportSettings();
+  sectionKeys.forEach(key => {
+    const checkbox = document.getElementById(`toggle-${key}`) as HTMLInputElement;
+    if (checkbox) {
+      checkbox.checked = settings[key] !== false;
+    }
+  });
+
+  // Handle toggle changes
+  document.querySelectorAll('.report-toggle').forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const newSettings: Record<string, boolean> = {};
+      sectionKeys.forEach(key => {
+        const cb = document.getElementById(`toggle-${key}`) as HTMLInputElement;
+        newSettings[key] = cb?.checked ?? true;
+      });
+      saveReportSettings(newSettings);
+    });
+  });
+
+  // Export to Excel
+  document.getElementById('exportBtn')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/transactions?limit=10000');
+      const transactions = await res.json();
+
+      if (!transactions.length) {
+        alert('Nessuna spesa da esportare');
+        return;
+      }
+
+      // Prepare data
+      const data = transactions.map((t: any) => ({
+        'Data': new Date(t.date).toLocaleDateString('it-IT'),
+        'Importo': t.amount,
+        'Categoria': t.category_name || 'N/A',
+        'Descrizione': t.description || '',
+        'Tipo': t.type === 'expense' ? 'Spesa' : 'Entrata'
+      }));
+
+      // Create workbook
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Spese');
+
+      // Download
+      const fileName = `spese_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Errore durante l\'esportazione');
+    }
+  });
+
+  // Delete all transactions
+  document.getElementById('deleteAllBtn')?.addEventListener('click', async () => {
+    const confirmed = confirm(
+      '⚠️ ATTENZIONE!\n\nStai per eliminare TUTTE le spese.\nQuesta azione NON può essere annullata.\n\nSei sicuro di voler continuare?'
+    );
+
+    if (!confirmed) return;
+
+    const doubleConfirm = confirm('Confermi di voler eliminare definitivamente tutte le spese?');
+
+    if (!doubleConfirm) return;
+
+    try {
+      const res = await fetch('/api/transactions/delete-all', {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        alert('Tutte le spese sono state eliminate');
+        window.location.href = '/';
+      } else {
+        alert('Errore durante l\'eliminazione');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Errore durante l\'eliminazione');
+    }
+  });
+</script>

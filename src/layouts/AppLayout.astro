@@ -1,0 +1,140 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  activeNav?: 'home' | 'transactions' | 'categories' | 'report' | 'settings';
+}
+
+const {
+  title = 'SpesaTracker',
+  description = 'Traccia le tue spese in modo semplice e veloce',
+  activeNav = 'home'
+} = Astro.props;
+
+const navItems = [
+  { id: 'home', href: '/', icon: '🏠', label: 'Home' },
+  { id: 'transactions', href: '/transazioni', icon: '📋', label: 'Spese' },
+  { id: 'categories', href: '/categorie', icon: '📁', label: 'Categorie' },
+  { id: 'report', href: '/report', icon: '📊', label: 'Report' },
+  { id: 'settings', href: '/impostazioni', icon: '⚙️', label: 'Impost.' },
+];
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#3B82F6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-gray-50 text-gray-900 pb-20">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white sticky top-0 z-40 shadow-lg">
+      <div class="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
+        <h1 class="text-xl font-bold">{title}</h1>
+        <div class="flex items-center gap-3">
+          <span id="userName" class="text-sm opacity-90"></span>
+          <button
+            id="logoutBtn"
+            class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded-lg transition-colors hidden"
+          >
+            Esci
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-lg mx-auto px-4 py-6">
+      <slot />
+    </main>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <div class="max-w-lg mx-auto flex justify-around items-center h-16">
+        {navItems.map(item => (
+          <a
+            href={item.href}
+            class={`flex flex-col items-center justify-center w-full h-full transition-colors ${
+              activeNav === item.id
+                ? 'text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span class="text-xl">{item.icon}</span>
+            <span class="text-xs mt-1">{item.label}</span>
+          </a>
+        ))}
+      </div>
+    </nav>
+
+    <!-- Floating Action Button per aggiungere spesa -->
+    <a
+      href="/nuova"
+      class="fixed bottom-20 right-4 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-blue-700 transition-colors z-50"
+      aria-label="Nuova spesa"
+    >
+      +
+    </a>
+  </body>
+</html>
+
+<script>
+  // Auth check and logout handler
+  const userNameEl = document.getElementById('userName');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  // Check authentication
+  fetch('/api/auth/me')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.authenticated) {
+        window.location.href = '/login';
+        return;
+      }
+      // Show user name
+      if (userNameEl && data.user?.name) {
+        userNameEl.textContent = data.user.name;
+      }
+      // Show logout button
+      if (logoutBtn) {
+        logoutBtn.classList.remove('hidden');
+      }
+    })
+    .catch(() => {
+      window.location.href = '/login';
+    });
+
+  // Logout handler
+  logoutBtn?.addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  });
+</script>
+
+<style>
+  /* Nascondi scrollbar ma mantieni scroll */
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Safe area per dispositivi con notch */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    nav {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    body {
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+  }
+</style>

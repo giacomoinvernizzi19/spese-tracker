@@ -1,0 +1,99 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import CategoryPieChart from '../components/charts/CategoryPieChart.svelte';
+import MonthlyBarChart from '../components/charts/MonthlyBarChart.svelte';
+import TransactionList from '../components/transactions/TransactionList.svelte';
+
+const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+const currentMonth = monthNames[new Date().getMonth()];
+const currentYear = new Date().getFullYear();
+---
+
+<AppLayout title="SpesaTracker" activeNav="home">
+  <!-- Month Selector -->
+  <div class="flex items-center justify-between mb-6">
+    <button id="prevMonth" class="p-2 text-gray-500 hover:text-gray-700">←</button>
+    <h2 class="text-lg font-semibold" id="currentMonthLabel">{currentMonth} {currentYear}</h2>
+    <button id="nextMonth" class="p-2 text-gray-500 hover:text-gray-700">→</button>
+  </div>
+
+  <!-- Total Card -->
+  <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white mb-6 shadow-lg">
+    <div class="text-sm opacity-80 mb-1">Speso questo mese</div>
+    <div class="text-4xl font-bold mb-4" id="monthTotal">
+      <span class="animate-pulse">...</span>
+    </div>
+    <div class="flex items-center gap-2 text-sm">
+      <span class="opacity-80">Budget:</span>
+      <div class="flex-1 bg-white/20 rounded-full h-2">
+        <div class="bg-white rounded-full h-2 transition-all" style="width: 0%" id="budgetProgress"></div>
+      </div>
+      <span id="budgetPercent">-</span>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="space-y-6 mb-6">
+    <CategoryPieChart client:load title="Spese per categoria" />
+    <MonthlyBarChart client:load title="Ultimi 6 mesi" />
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-gray-900">Ultime spese</h3>
+      <a href="/transazioni" class="text-blue-600 text-sm">Vedi tutte →</a>
+    </div>
+    <TransactionList client:load apiUrl="/api/transactions?limit=5" />
+  </div>
+</AppLayout>
+
+<script>
+  const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+
+  let currentMonth = new Date().getMonth();
+  let currentYear = new Date().getFullYear();
+
+  async function loadMonthTotal() {
+    try {
+      const res = await fetch(`/api/stats?month=${currentMonth + 1}&year=${currentYear}`);
+      const stats = await res.json();
+      document.getElementById('monthTotal')!.textContent = `€ ${(stats.totalMonth || 0).toFixed(2)}`;
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      document.getElementById('monthTotal')!.textContent = '€ 0.00';
+    }
+  }
+
+  function updateMonthLabel() {
+    document.getElementById('currentMonthLabel')!.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+  }
+
+  document.getElementById('prevMonth')?.addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) {
+      currentMonth = 11;
+      currentYear--;
+    }
+    updateMonthLabel();
+    loadMonthTotal();
+  });
+
+  document.getElementById('nextMonth')?.addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) {
+      currentMonth = 0;
+      currentYear++;
+    }
+    updateMonthLabel();
+    loadMonthTotal();
+  });
+
+  // Listen for transaction deletions
+  window.addEventListener('transactionDeleted', () => {
+    loadMonthTotal();
+  });
+
+  // Initial load
+  loadMonthTotal();
+</script>

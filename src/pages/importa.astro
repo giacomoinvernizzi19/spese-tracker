@@ -1,0 +1,287 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout title="Importa Excel" activeNav="settings">
+  <div class="bg-white rounded-xl p-6 shadow-sm mb-6">
+    <h2 class="text-xl font-bold mb-4">Importa da Excel</h2>
+
+    <!-- Instructions -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <h3 class="font-semibold text-blue-800 mb-2">📋 Formato richiesto</h3>
+      <p class="text-blue-700 text-sm mb-3">
+        Il file Excel (.xlsx) deve contenere almeno queste colonne nella prima riga:
+      </p>
+      <ul class="text-sm text-blue-700 space-y-1 mb-3">
+        <li><strong>• Data</strong> - formato: GG/MM/AAAA oppure data Excel</li>
+        <li><strong>• Importo</strong> - numero (es: 25.50 o 25,50)</li>
+        <li><strong>• Categoria</strong> - nome categoria (verrà creata se non esiste)</li>
+        <li><strong>• Descrizione</strong> - (opzionale) note sulla spesa</li>
+      </ul>
+      <p class="text-xs text-blue-600">
+        💡 I nomi delle colonne possono variare (es: "Amount", "$", "Date", etc.) - li mapperai dopo il caricamento
+      </p>
+    </div>
+
+    <!-- Example -->
+    <div class="bg-gray-50 rounded-lg p-4 mb-6 overflow-x-auto">
+      <h3 class="font-semibold text-gray-700 mb-2">Esempio struttura file:</h3>
+      <table class="text-xs w-full">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="px-3 py-2 text-left">Data</th>
+            <th class="px-3 py-2 text-left">Importo</th>
+            <th class="px-3 py-2 text-left">Categoria</th>
+            <th class="px-3 py-2 text-left">Descrizione</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white">
+          <tr class="border-t">
+            <td class="px-3 py-2">01/01/2024</td>
+            <td class="px-3 py-2">45.90</td>
+            <td class="px-3 py-2">Spesa</td>
+            <td class="px-3 py-2">Supermercato</td>
+          </tr>
+          <tr class="border-t">
+            <td class="px-3 py-2">02/01/2024</td>
+            <td class="px-3 py-2">12.50</td>
+            <td class="px-3 py-2">Ristoranti</td>
+            <td class="px-3 py-2">Pranzo</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Limitations -->
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+      <h3 class="font-semibold text-amber-800 mb-2">⚠️ Limitazioni</h3>
+      <ul class="text-sm text-amber-700 space-y-1">
+        <li>• Vengono importate solo le <strong>spese</strong> (non entrate)</li>
+        <li>• Le righe senza importo vengono saltate</li>
+        <li>• Categorie nuove vengono create automaticamente</li>
+        <li>• Solo la prima scheda (sheet) viene letta</li>
+        <li>• Massimo ~1000 righe per import</li>
+      </ul>
+    </div>
+
+    <!-- Upload Area -->
+    <div
+      id="dropZone"
+      class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 transition-colors"
+    >
+      <div class="text-4xl mb-2">📂</div>
+      <p class="text-gray-600">Trascina qui il file Excel</p>
+      <p class="text-sm text-gray-400 mt-1">oppure clicca per selezionare</p>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden" />
+    </div>
+
+    <!-- Preview -->
+    <div id="preview" class="hidden mt-6">
+      <h3 class="font-semibold mb-4">Anteprima (<span id="rowCount">0</span> righe)</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50">
+            <tr id="previewHeader"></tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Column Mapping -->
+      <div class="mt-6 grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Colonna Data</label>
+          <select id="dateCol" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Colonna Importo</label>
+          <select id="amountCol" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Colonna Categoria</label>
+          <select id="categoryCol" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Colonna Descrizione</label>
+          <select id="descCol" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <option value="">- Nessuna -</option>
+          </select>
+        </div>
+      </div>
+
+      <button
+        id="importBtn"
+        class="w-full mt-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700"
+      >
+        Importa Spese
+      </button>
+    </div>
+
+    <!-- Progress -->
+    <div id="progress" class="hidden mt-6">
+      <div class="flex items-center gap-4">
+        <div class="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+        <span>Importazione in corso...</span>
+      </div>
+      <div class="mt-4 bg-gray-200 rounded-full h-2">
+        <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+      </div>
+      <p class="text-sm text-gray-500 mt-2"><span id="importedCount">0</span> spese importate</p>
+    </div>
+
+    <!-- Success -->
+    <div id="success" class="hidden mt-6 text-center">
+      <div class="text-4xl mb-2">✅</div>
+      <p class="text-lg font-semibold text-green-600">Importazione completata!</p>
+      <a href="/" class="text-blue-600 mt-2 inline-block">Vai alla Dashboard →</a>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  import * as XLSX from 'xlsx';
+
+  let parsedData: any[] = [];
+  let headers: string[] = [];
+  let categories: any[] = [];
+
+  // Load categories
+  fetch('/api/categories').then(r => r.json()).then(data => categories = data);
+
+  const dropZone = document.getElementById('dropZone')!;
+  const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-blue-500', 'bg-blue-50');
+  });
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+  });
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+    const file = e.dataTransfer?.files[0];
+    if (file) processFile(file);
+  });
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (file) processFile(file);
+  });
+
+  function processFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+
+      if (json.length < 2) return alert('File vuoto o senza dati');
+
+      headers = json[0].map(String);
+      parsedData = json.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== ''));
+
+      showPreview();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function showPreview() {
+    document.getElementById('preview')!.classList.remove('hidden');
+    document.getElementById('rowCount')!.textContent = parsedData.length.toString();
+
+    // Header
+    document.getElementById('previewHeader')!.innerHTML = headers
+      .map(h => `<th class="px-3 py-2 text-left">${h}</th>`).join('');
+
+    // Body (first 5 rows)
+    document.getElementById('previewBody')!.innerHTML = parsedData.slice(0, 5)
+      .map(row => `<tr>${headers.map((_, i) => `<td class="px-3 py-2 border-t">${row[i] ?? ''}</td>`).join('')}</tr>`)
+      .join('');
+
+    // Populate column selectors
+    const options = headers.map((h, i) => `<option value="${i}">${h}</option>`).join('');
+    ['dateCol', 'amountCol', 'categoryCol'].forEach(id => {
+      document.getElementById(id)!.innerHTML = options;
+    });
+    document.getElementById('descCol')!.innerHTML = `<option value="">- Nessuna -</option>${options}`;
+
+    // Auto-detect columns
+    const lowerHeaders = headers.map(h => h.toLowerCase());
+    const dateIdx = lowerHeaders.findIndex(h => h.includes('data') || h.includes('date'));
+    const amountIdx = lowerHeaders.findIndex(h => h.includes('importo') || h.includes('amount') || h === '$');
+    const catIdx = lowerHeaders.findIndex(h => h.includes('categoria') || h.includes('category'));
+    const descIdx = lowerHeaders.findIndex(h => h.includes('desc') || h.includes('note') || h.includes('item'));
+
+    if (dateIdx >= 0) (document.getElementById('dateCol') as HTMLSelectElement).value = dateIdx.toString();
+    if (amountIdx >= 0) (document.getElementById('amountCol') as HTMLSelectElement).value = amountIdx.toString();
+    if (catIdx >= 0) (document.getElementById('categoryCol') as HTMLSelectElement).value = catIdx.toString();
+    if (descIdx >= 0) (document.getElementById('descCol') as HTMLSelectElement).value = descIdx.toString();
+  }
+
+  document.getElementById('importBtn')?.addEventListener('click', async () => {
+    const dateCol = parseInt((document.getElementById('dateCol') as HTMLSelectElement).value);
+    const amountCol = parseInt((document.getElementById('amountCol') as HTMLSelectElement).value);
+    const categoryCol = parseInt((document.getElementById('categoryCol') as HTMLSelectElement).value);
+    const descCol = (document.getElementById('descCol') as HTMLSelectElement).value;
+
+    document.getElementById('preview')!.classList.add('hidden');
+    document.getElementById('progress')!.classList.remove('hidden');
+
+    let imported = 0;
+
+    for (const row of parsedData) {
+      const rawDate = row[dateCol];
+      const amount = parseFloat(String(row[amountCol]).replace(',', '.')) || 0;
+      const categoryName = String(row[categoryCol] || '').trim();
+      const description = descCol ? String(row[parseInt(descCol)] || '') : '';
+
+      if (!amount) continue;
+
+      // Parse date
+      let date: string;
+      if (typeof rawDate === 'number') {
+        // Excel serial date
+        const d = new Date((rawDate - 25569) * 86400 * 1000);
+        date = d.toISOString().split('T')[0];
+      } else {
+        date = new Date(rawDate).toISOString().split('T')[0];
+      }
+
+      // Find or create category
+      let category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+      if (!category && categoryName) {
+        const res = await fetch('/api/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: categoryName })
+        });
+        const newCat = await res.json();
+        category = { id: newCat.id, name: categoryName };
+        categories.push(category);
+      }
+
+      // Create transaction
+      await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          date,
+          category_id: category?.id || 12, // Default to "Altro"
+          description
+        })
+      });
+
+      imported++;
+      document.getElementById('importedCount')!.textContent = imported.toString();
+      (document.getElementById('progressBar') as HTMLElement).style.width =
+        `${(imported / parsedData.length) * 100}%`;
+    }
+
+    document.getElementById('progress')!.classList.add('hidden');
+    document.getElementById('success')!.classList.remove('hidden');
+  });
+</script>
