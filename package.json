@@ -17,6 +17,7 @@
     "astro": "^5.16.6",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
+    "resend": "^6.7.0",
     "svelte": "^5.46.1",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",

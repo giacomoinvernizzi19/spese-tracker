@@ -165,3 +165,17 @@ export function validateName(name: string): { valid: boolean; error?: string } {
   }
   return { valid: true };
 }
+
+// Password reset helpers
+const RESET_TOKEN_DURATION_HOURS = 1;
+
+export function generateResetToken(): string {
+  // Generate a long, secure token (two UUIDs concatenated)
+  return crypto.randomUUID() + crypto.randomUUID();
+}
+
+export function getResetTokenExpiry(): string {
+  const date = new Date();
+  date.setHours(date.getHours() + RESET_TOKEN_DURATION_HOURS);
+  return date.toISOString();
+}

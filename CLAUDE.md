@@ -7,6 +7,7 @@
 | **WHAT** | App tracciamento spese personali |
 | **STACK** | Astro + Svelte 5 + TailwindCSS 4 |
 | **DEPLOY** | Cloudflare Workers + D1 Database |
+| **URL** | https://spese-tracker.g-invernizzi-jm.workers.dev |
 | **REPO** | github.com/giacomoinvernizzi19/spese-tracker |
 
 ---
@@ -48,7 +49,7 @@ src/
 npm install          # Install dependencies
 npm run dev          # Dev server (localhost:4321)
 npm run build        # Build for production
-npx wrangler deploy  # Deploy to Cloudflare
+npm run deploy       # Deploy to Cloudflare (usa .env)
 ```
 
 ---
