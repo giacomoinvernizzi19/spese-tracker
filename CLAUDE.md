@@ -53,6 +53,25 @@ npx wrangler deploy  # Deploy to Cloudflare
 
 ---
 
+## Wrangler Multi-Account Setup
+
+Questo progetto usa un account Cloudflare **diverso** da quello Enpal.
+
+**IMPORTANTE:** Prima di usare `wrangler deploy`, assicurati di avere il file `.env`:
+
+```bash
+cp .env.example .env
+# Poi modifica .env con i valori corretti
+```
+
+Il file `.env` sovrascrive le credenziali globali. NON è committato (in .gitignore).
+
+**Credenziali per questo progetto** (account personale Giacomo):
+- CLOUDFLARE_ACCOUNT_ID: (vedi Cloudflare Dashboard)
+- CLOUDFLARE_API_TOKEN: (crea da dash.cloudflare.com/profile/api-tokens)
+
+---
+
 ## Database (D1)
 
 - **Name**: spese-tracker-db
