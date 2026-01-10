@@ -102,11 +102,21 @@ import AppLayout from '../layouts/AppLayout.astro';
           <select id="categoryCol" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></select>
         </div>
         <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Colonna Sottocategoria</label>
+          <select id="subCategoryCol" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <option value="">- Nessuna / Auto-detect -</option>
+          </select>
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Colonna Descrizione</label>
           <select id="descCol" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
             <option value="">- Nessuna -</option>
           </select>
         </div>
+      </div>
+
+      <div class="mt-4 bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+        <strong>Sottocategorie:</strong> Se non selezioni, verranno rilevate usando separatori (es: Ristoranti &gt; Pranzo)
       </div>
 
       <button
@@ -146,7 +156,7 @@ import AppLayout from '../layouts/AppLayout.astro';
   let categories: any[] = [];
 
   // Load categories
-  fetch('/api/categories').then(r => r.json()).then(data => categories = data);
+  fetch('/api/categories?hierarchical=true').then(r => r.json()).then(data => categories = data);
 
   const dropZone = document.getElementById('dropZone')!;
   const fileInput = document.getElementById('fileInput') as HTMLInputElement;
@@ -188,6 +198,64 @@ import AppLayout from '../layouts/AppLayout.astro';
     reader.readAsArrayBuffer(file);
   }
 
+
+  // Parse category string to extract parent and subcategory
+  function parseCategoryString(categoryStr) {
+    const separators = [' > ', ' / ', ' - ', ' : '];
+    for (const sep of separators) {
+      if (categoryStr.includes(sep)) {
+        const parts = categoryStr.split(sep).map(s => s.trim());
+        if (parts.length >= 2 && parts[0] && parts[1]) {
+          return { parent: parts[0], sub: parts[1] };
+        }
+      }
+    }
+    return { parent: categoryStr, sub: null };
+  }
+
+  // Find category by name in hierarchical structure
+  function findCategoryByName(name, parentId = null) {
+    const lowerName = name.toLowerCase();
+    for (const cat of categories) {
+      if (!parentId && !cat.parent_id && cat.name.toLowerCase() === lowerName) {
+        return cat;
+      }
+      if (cat.children) {
+        for (const child of cat.children) {
+          if (parentId === cat.id && child.name.toLowerCase() === lowerName) {
+            return child;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  // Find or create category
+  async function findOrCreateCategory(name, parentId = null) {
+    let category = findCategoryByName(name, parentId);
+    if (category) return { category, created: false };
+
+    const res = await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, parent_id: parentId })
+    });
+    const newCat = await res.json();
+    const created = { id: newCat.id, name, parent_id: parentId, children: [] };
+    
+    if (parentId) {
+      const parent = categories.find(c => c.id === parentId);
+      if (parent) {
+        if (!parent.children) parent.children = [];
+        parent.children.push(created);
+      }
+    } else {
+      categories.push(created);
+    }
+    return { category: created, created: true };
+  }
+
   function showPreview() {
     document.getElementById('preview')!.classList.remove('hidden');
     document.getElementById('rowCount')!.textContent = parsedData.length.toString();
@@ -206,6 +274,7 @@ import AppLayout from '../layouts/AppLayout.astro';
     ['dateCol', 'amountCol', 'categoryCol'].forEach(id => {
       document.getElementById(id)!.innerHTML = options;
     });
+    document.getElementById('subCategoryCol')!.innerHTML = `<option value="">- Nessuna / Auto-detect -</option>${options}`;
     document.getElementById('descCol')!.innerHTML = `<option value="">- Nessuna -</option>${options}`;
 
     // Auto-detect columns
@@ -213,11 +282,13 @@ import AppLayout from '../layouts/AppLayout.astro';
     const dateIdx = lowerHeaders.findIndex(h => h.includes('data') || h.includes('date'));
     const amountIdx = lowerHeaders.findIndex(h => h.includes('importo') || h.includes('amount') || h === '$');
     const catIdx = lowerHeaders.findIndex(h => h.includes('categoria') || h.includes('category'));
+    const subCatIdx = lowerHeaders.findIndex(h => h.includes('sottocategoria') || h.includes('subcategory') || h.includes('sub-category'));
     const descIdx = lowerHeaders.findIndex(h => h.includes('desc') || h.includes('note') || h.includes('item'));
 
     if (dateIdx >= 0) (document.getElementById('dateCol') as HTMLSelectElement).value = dateIdx.toString();
     if (amountIdx >= 0) (document.getElementById('amountCol') as HTMLSelectElement).value = amountIdx.toString();
     if (catIdx >= 0) (document.getElementById('categoryCol') as HTMLSelectElement).value = catIdx.toString();
+    if (subCatIdx >= 0) (document.getElementById('subCategoryCol') as HTMLSelectElement).value = subCatIdx.toString();
     if (descIdx >= 0) (document.getElementById('descCol') as HTMLSelectElement).value = descIdx.toString();
   }
 
@@ -225,42 +296,58 @@ import AppLayout from '../layouts/AppLayout.astro';
     const dateCol = parseInt((document.getElementById('dateCol') as HTMLSelectElement).value);
     const amountCol = parseInt((document.getElementById('amountCol') as HTMLSelectElement).value);
     const categoryCol = parseInt((document.getElementById('categoryCol') as HTMLSelectElement).value);
+    const subCategoryCol = (document.getElementById('subCategoryCol') as HTMLSelectElement).value;
     const descCol = (document.getElementById('descCol') as HTMLSelectElement).value;
 
     document.getElementById('preview')!.classList.add('hidden');
     document.getElementById('progress')!.classList.remove('hidden');
 
     let imported = 0;
+    let createdCats = 0;
+    let createdSubs = 0;
 
     for (const row of parsedData) {
       const rawDate = row[dateCol];
       const amount = parseFloat(String(row[amountCol]).replace(',', '.')) || 0;
-      const categoryName = String(row[categoryCol] || '').trim();
+      const rawCategory = String(row[categoryCol] || '').trim();
+      const rawSubCategory = subCategoryCol ? String(row[parseInt(subCategoryCol)] || '').trim() : '';
       const description = descCol ? String(row[parseInt(descCol)] || '') : '';
 
-      if (!amount) continue;
+      if (!amount || !rawCategory) continue;
 
       // Parse date
       let date: string;
       if (typeof rawDate === 'number') {
-        // Excel serial date
         const d = new Date((rawDate - 25569) * 86400 * 1000);
         date = d.toISOString().split('T')[0];
       } else {
-        date = new Date(rawDate).toISOString().split('T')[0];
+        const parsed = new Date(rawDate);
+        if (isNaN(parsed.getTime())) continue;
+        date = parsed.toISOString().split('T')[0];
       }
 
-      // Find or create category
-      let category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-      if (!category && categoryName) {
-        const res = await fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: categoryName })
-        });
-        const newCat = await res.json();
-        category = { id: newCat.id, name: categoryName };
-        categories.push(category);
+      // Determine parent and subcategory
+      let parentName: string;
+      let subName: string | null;
+      if (rawSubCategory) {
+        parentName = rawCategory;
+        subName = rawSubCategory;
+      } else {
+        const parsed = parseCategoryString(rawCategory);
+        parentName = parsed.parent;
+        subName = parsed.sub;
+      }
+
+      // Find or create parent category
+      const { category: parentCat, created: parentCreated } = await findOrCreateCategory(parentName, null);
+      if (parentCreated) createdCats++;
+
+      // Find or create subcategory if needed
+      let finalCategoryId = parentCat.id;
+      if (subName) {
+        const { category: subCat, created: subCreated } = await findOrCreateCategory(subName, parentCat.id);
+        finalCategoryId = subCat.id;
+        if (subCreated) createdSubs++;
       }
 
       // Create transaction
@@ -270,7 +357,7 @@ import AppLayout from '../layouts/AppLayout.astro';
         body: JSON.stringify({
           amount,
           date,
-          category_id: category?.id || 12, // Default to "Altro"
+          category_id: finalCategoryId,
           description
         })
       });
@@ -283,5 +370,17 @@ import AppLayout from '../layouts/AppLayout.astro';
 
     document.getElementById('progress')!.classList.add('hidden');
     document.getElementById('success')!.classList.remove('hidden');
-  });
+    
+    // Show created categories info
+    if (createdCats > 0 || createdSubs > 0) {
+      const info = [];
+      if (createdCats > 0) info.push(createdCats + ' categorie');
+      if (createdSubs > 0) info.push(createdSubs + ' sottocategorie');
+      const successEl = document.getElementById('success')!;
+      const p = document.createElement('p');
+      p.className = 'text-sm text-gray-500 mt-1';
+      p.textContent = 'Create: ' + info.join(', ');
+      successEl.querySelector('p')?.after(p);
+    }
+  });;
 </script>
