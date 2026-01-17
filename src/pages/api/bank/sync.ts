@@ -88,38 +88,26 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     });
 
     const encryptionKey = runtime.env.ENCRYPTION_KEY as string;
+    if (!encryptionKey) {
+      console.error('ENCRYPTION_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     let totalNew = 0;
     let totalDuplicates = 0;
     let totalFetched = 0;
     let totalErrors = 0;
     const errors: string[] = [];
-    const debug: any = {
-      connectionsFound: connections.length,
-      connections: [],
-      accounts: [],
-      transactions: []
-    };
 
     for (const connection of connections) {
       try {
-        // Decrypt account_ids if encrypted
+        // Decrypt account_ids (encryptionKey already validated above)
         const rawAccountIds = connection.account_ids as string || '[]';
-        const decryptedAccountIds = encryptionKey
-          ? await safeDecrypt(rawAccountIds, encryptionKey)
-          : rawAccountIds;
+        const decryptedAccountIds = await safeDecrypt(rawAccountIds, encryptionKey);
         const accountIds = JSON.parse(decryptedAccountIds);
-
-        // Debug: log connection details
-        debug.connections.push({
-          id: connection.id,
-          institution: connection.institution_name,
-          status: connection.status,
-          accountIdsRaw: connection.account_ids,
-          accountIdsParsed: accountIds,
-          accountCount: accountIds.length,
-          lastSync: connection.last_sync_at
-        });
 
         // Default: sync from last sync or last 90 days
         const syncFrom = date_from || (
@@ -130,57 +118,13 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
         for (const accountId of accountIds) {
           try {
-            // Debug: log before API call
-            const accountDebugEntry: any = {
-              accountId: accountId.slice(0, 8) + '...',
-              fullAccountId: accountId,
-              dateFrom: syncFrom,
-              dateTo: date_to || 'oggi',
-              apiCallStatus: 'starting'
-            };
-
             const response = await client.getTransactions(accountId, syncFrom, date_to);
-
-            // Debug: log raw response structure
-            accountDebugEntry.apiCallStatus = 'completed';
-            accountDebugEntry.responseKeys = response ? Object.keys(response) : 'null response';
-            accountDebugEntry.hasTransactions = !!response?.transactions;
-            accountDebugEntry.rawResponse = JSON.stringify(response).slice(0, 500);
-
             const transactions = response.transactions?.booked || [];
-            const pendingCount = response.transactions?.pending?.length || 0;
-
-            // Debug info
-            const accountDebug = {
-              accountId: accountId.slice(0, 8) + '...',
-              dateFrom: syncFrom,
-              dateTo: date_to || 'oggi',
-              fetchedBooked: transactions.length,
-              fetchedPending: pendingCount,
-              dateRange: transactions.length > 0 ? {
-                oldest: transactions[transactions.length - 1]?.bookingDate,
-                newest: transactions[0]?.bookingDate
-              } : null
-            };
-            debug.accounts.push(accountDebug);
             totalFetched += transactions.length;
 
-            for (let txIndex = 0; txIndex < transactions.length; txIndex++) {
-              const tx = transactions[txIndex];
-              const txDebug: any = {
-                index: txIndex,
-                date: tx.bookingDate || tx.valueDate,
-                amount: tx.transactionAmount?.amount,
-                currency: tx.transactionAmount?.currency,
-                desc: (tx.remittanceInformationUnstructured || tx.creditorName || tx.debtorName || '').slice(0, 50),
-                hasTransactionId: !!tx.transactionId,
-                hasInternalId: !!tx.internalTransactionId,
-                status: 'unknown'
-              };
-
+            for (const tx of transactions) {
               try {
                 const externalId = `${accountId}_${tx.transactionId || tx.internalTransactionId || crypto.randomUUID()}`;
-                txDebug.externalId = externalId;
 
                 // Check if already exists (dedupe)
                 const existing = await db.prepare(`
@@ -189,8 +133,6 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
 
                 if (existing) {
                   totalDuplicates++;
-                  txDebug.status = 'duplicate';
-                  debug.transactions.push(txDebug);
                   continue;
                 }
 
@@ -226,25 +168,12 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
                 ).run();
 
                 totalNew++;
-                txDebug.status = 'inserted';
               } catch (txError) {
                 totalErrors++;
-                txDebug.status = 'error';
-                txDebug.error = txError instanceof Error ? txError.message : 'unknown';
               }
-              debug.transactions.push(txDebug);
             }
           } catch (accountError) {
-            console.error(`Error syncing account ${accountId}:`, accountError);
-            errors.push(`Account ${accountId.slice(0, 8)}...: ${accountError instanceof Error ? accountError.message : 'unknown'}`);
-            // Debug: log failed account
-            debug.accounts.push({
-              accountId: accountId.slice(0, 8) + '...',
-              fullAccountId: accountId,
-              apiCallStatus: 'error',
-              error: accountError instanceof Error ? accountError.message : String(accountError),
-              errorStack: accountError instanceof Error ? accountError.stack?.slice(0, 300) : undefined
-            });
+            errors.push(`Account sync failed: ${accountError instanceof Error ? accountError.message : 'unknown'}`);
           }
         }
 
@@ -253,8 +182,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
           UPDATE bank_connections SET last_sync_at = CURRENT_TIMESTAMP WHERE id = ?
         `).bind(connection.id).run();
       } catch (connError) {
-        console.error(`Error syncing connection ${connection.id}:`, connError);
-        errors.push(`Connection ${connection.institution_name || connection.id}: ${connError instanceof Error ? connError.message : 'unknown'}`);
+        errors.push(`Connection sync failed: ${connError instanceof Error ? connError.message : 'unknown'}`);
       }
     }
 
@@ -263,9 +191,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
       fetched: totalFetched,
       new: totalNew,
       duplicates: totalDuplicates,
-      insertErrors: totalErrors,
-      errors: errors.length > 0 ? errors : undefined,
-      debug
+      errors: errors.length > 0 ? errors : undefined
     }), {
       headers: { 'Content-Type': 'application/json' }
     });

@@ -1,11 +1,19 @@
 import type { APIRoute } from 'astro';
 import { validatePassword, hashPassword, timingSafeEqual } from '../../../lib/auth';
+import { checkRateLimit, getClientIP, rateLimitResponse } from '../../../lib/rate-limiter';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const db = locals.runtime.env.DB as D1Database;
+
+    // Rate limiting check by IP
+    const ip = getClientIP(request);
+    const rateLimit = await checkRateLimit(db, 'forgot-password', ip);
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.retryAfterSeconds!);
+    }
 
     const body = await request.json();
     const { token, password } = body;
@@ -34,13 +42,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // Find token in database
-    // Note: Using timing-safe comparison for the token value
-    const resetToken = await db.prepare(`
+    // Find token in database using direct lookup
+    // Note: Using indexed lookup for O(log n) performance
+    const tokenData = await db.prepare(`
       SELECT id, user_id, token, expires_at, used
       FROM password_reset_tokens
-      WHERE id IN (SELECT id FROM password_reset_tokens ORDER BY created_at DESC LIMIT 100)
-    `).bind().all<{
+      WHERE token = ?
+    `).bind(token).first<{
       id: string;
       user_id: string;
       token: string;
@@ -48,25 +56,21 @@ export const POST: APIRoute = async ({ request, locals }) => {
       used: number;
     }>();
 
-    // Find matching token using timing-safe comparison
-    let matchedToken: { id: string; user_id: string; token: string; expires_at: string; used: number } | null = null;
-    for (const t of resetToken.results || []) {
-      if (timingSafeEqual(t.token, token)) {
-        matchedToken = t;
-        break;
-      }
-    }
-
     // Token not found - use same error message for security
-    if (!matchedToken) {
+    if (!tokenData) {
       return new Response(JSON.stringify({ error: 'Token non valido o scaduto' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Alias for compatibility with rest of code
-    const tokenData = matchedToken;
+    // Verify token matches using timing-safe comparison (extra security layer)
+    if (!timingSafeEqual(tokenData.token, token)) {
+      return new Response(JSON.stringify({ error: 'Token non valido o scaduto' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     // Token already used
     if (tokenData.used === 1) {

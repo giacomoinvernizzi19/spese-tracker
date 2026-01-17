@@ -20,6 +20,15 @@ export const GET: APIRoute = async ({ cookies, locals }) => {
     });
   }
 
+  // Encryption is required
+  if (!encryptionKey) {
+    console.error('ENCRYPTION_KEY not configured');
+    return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const result = await db.prepare(`
       SELECT id, institution_id, institution_name, status, account_ids, last_sync_at, expires_at, created_at
@@ -32,9 +41,7 @@ export const GET: APIRoute = async ({ cookies, locals }) => {
     const connections = await Promise.all(result.results.map(async (conn: any) => {
       let accountIds: string[] = [];
       if (conn.account_ids) {
-        const decrypted = encryptionKey
-          ? await safeDecrypt(conn.account_ids, encryptionKey)
-          : conn.account_ids;
+        const decrypted = await safeDecrypt(conn.account_ids, encryptionKey);
         accountIds = JSON.parse(decrypted);
       }
       return {
@@ -70,6 +77,15 @@ export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
     });
   }
 
+  // Encryption is required
+  if (!encryptionKey) {
+    console.error('ENCRYPTION_KEY not configured');
+    return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const body = await request.json();
     const { connection_id } = body;
@@ -94,10 +110,8 @@ export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
       });
     }
 
-    // Decrypt requisition_id if encrypted
-    const requisitionId = encryptionKey
-      ? await safeDecrypt(connection.requisition_id as string, encryptionKey)
-      : connection.requisition_id as string;
+    // Decrypt requisition_id
+    const requisitionId = await safeDecrypt(connection.requisition_id as string, encryptionKey);
 
     // Delete requisition from Nordigen (optional, best-effort)
     try {

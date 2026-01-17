@@ -47,11 +47,16 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
       connectionId // Use connection ID as reference
     );
 
-    // Encrypt sensitive data before storing
+    // Encrypt sensitive data before storing (mandatory)
     const encryptionKey = runtime.env.ENCRYPTION_KEY as string;
-    const encryptedRequisitionId = encryptionKey
-      ? await encrypt(requisition.id, encryptionKey)
-      : requisition.id;
+    if (!encryptionKey) {
+      console.error('ENCRYPTION_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    const encryptedRequisitionId = await encrypt(requisition.id, encryptionKey);
 
     // Save connection to database
     await db.prepare(`

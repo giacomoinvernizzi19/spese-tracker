@@ -18,7 +18,7 @@ export interface Session {
 // Constants
 const SESSION_COOKIE_NAME = 'session';
 const SESSION_DURATION_DAYS = 7;
-const BCRYPT_ROUNDS = 10;
+const BCRYPT_ROUNDS = 12;
 
 // Password hashing
 export async function hashPassword(password: string): Promise<string> {
@@ -222,19 +222,15 @@ export function getResetTokenExpiry(): string {
 
 // Timing-safe string comparison to prevent timing attacks
 export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    // Compare against itself to maintain constant time even with different lengths
-    const dummy = a;
-    let result = 0;
-    for (let i = 0; i < dummy.length; i++) {
-      result |= dummy.charCodeAt(i) ^ dummy.charCodeAt(i);
-    }
-    return false;
-  }
+  // Use constant-time comparison that processes all characters regardless of match
+  const maxLength = Math.max(a.length, b.length);
 
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  // Always iterate over the maximum length to prevent timing leaks
+  let result = a.length ^ b.length; // Include length difference in result
+  for (let i = 0; i < maxLength; i++) {
+    const charA = i < a.length ? a.charCodeAt(i) : 0;
+    const charB = i < b.length ? b.charCodeAt(i) : 0;
+    result |= charA ^ charB;
   }
   return result === 0;
 }

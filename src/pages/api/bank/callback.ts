@@ -33,20 +33,22 @@ export const GET: APIRoute = async ({ request, locals }) => {
       NORDIGEN_SECRET_KEY: runtime.env.NORDIGEN_SECRET_KEY
     });
 
-    // Decrypt requisition_id if encrypted
-    const requisitionId = encryptionKey
-      ? await safeDecrypt(connection.requisition_id as string, encryptionKey)
-      : connection.requisition_id as string;
+    // Encryption is required
+    if (!encryptionKey) {
+      console.error('ENCRYPTION_KEY not configured');
+      return Response.redirect(`${appUrl}/banche?status=error&message=server_config`, 302);
+    }
+
+    // Decrypt requisition_id
+    const requisitionId = await safeDecrypt(connection.requisition_id as string, encryptionKey);
 
     // Get requisition status from Nordigen
     const requisition = await client.getRequisition(requisitionId);
 
     if (requisition.status === 'LN' && requisition.accounts?.length > 0) {
-      // Encrypt account IDs before storing
+      // Encrypt account IDs before storing (encryptionKey already validated above)
       const accountIdsJson = JSON.stringify(requisition.accounts);
-      const encryptedAccountIds = encryptionKey
-        ? await encrypt(accountIdsJson, encryptionKey)
-        : accountIdsJson;
+      const encryptedAccountIds = await encrypt(accountIdsJson, encryptionKey);
 
       // Success - linked and has accounts
       await db.prepare(`
