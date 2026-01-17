@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { validateEmail, generateResetToken, getResetTokenExpiry } from '../../../lib/auth';
+import { checkRateLimit, getClientIP, rateLimitResponse } from '../../../lib/rate-limiter';
 import { Resend } from 'resend';
 
 export const prerender = false;
@@ -18,6 +19,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+
+    // Rate limiting check
+    const ip = getClientIP(request);
+    const rateLimit = await checkRateLimit(db, 'forgot-password', ip, email);
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.retryAfterSeconds!);
     }
 
     // Find user by email

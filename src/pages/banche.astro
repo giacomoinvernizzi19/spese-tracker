@@ -1,0 +1,475 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout title="Conti Collegati" activeNav="settings">
+  <!-- Status Messages -->
+  <div id="statusMessage" class="hidden mb-4 p-4 rounded-xl"></div>
+
+  <!-- Connected Accounts -->
+  <div class="mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">I tuoi conti</h2>
+    <div id="accountsList" class="space-y-4">
+      <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+        Caricamento...
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Bank Button -->
+  <button
+    id="addBankBtn"
+    class="w-full lg:w-auto lg:px-6 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-500 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-colors"
+  >
+    + Collega Nuovo Conto
+  </button>
+
+  <!-- Bank Selection Modal -->
+  <div id="bankModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 m-4 max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Seleziona la tua banca</h3>
+
+      <div class="mb-4">
+        <input
+          type="text"
+          id="bankSearch"
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          placeholder="Cerca banca..."
+        />
+      </div>
+
+      <div id="banksList" class="flex-1 overflow-y-auto space-y-2">
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          Caricamento banche...
+        </div>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button
+          id="cancelBankBtn"
+          class="w-full py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+        >
+          Annulla
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync Config Modal -->
+  <div id="syncConfigModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 m-4 max-w-md w-full">
+      <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">Sincronizza transazioni</h3>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Da quale data importare?</label>
+          <input
+            type="date"
+            id="syncDateFrom"
+            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Lascia vuoto per usare la data dell'ultimo sync (o ultimi 90 giorni se è la prima volta)
+          </p>
+        </div>
+
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+          <p class="text-sm text-yellow-800 dark:text-yellow-200">
+            <strong>Nota:</strong> Se hai già importato transazioni da Excel per questo periodo, potresti avere duplicati. Scegli una data successiva all'ultima importazione Excel.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button
+          id="cancelSyncBtn"
+          class="flex-1 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+        >
+          Annulla
+        </button>
+        <button
+          id="confirmSyncBtn"
+          class="flex-1 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+        >
+          Sincronizza
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync Progress Modal -->
+  <div id="syncModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 m-4 max-w-md w-full text-center">
+      <div class="text-4xl mb-4">🔄</div>
+      <h3 class="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">Sincronizzazione in corso</h3>
+      <p class="text-gray-500 dark:text-gray-400 mb-4">Recupero transazioni dalla banca...</p>
+      <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div class="h-full bg-blue-500 animate-pulse" style="width: 100%"></div>
+      </div>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  let institutions: any[] = [];
+  let connections: any[] = [];
+
+  // Check URL params for status messages
+  function checkStatus() {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+    const message = params.get('message');
+    const statusEl = document.getElementById('statusMessage')!;
+
+    if (status === 'success') {
+      statusEl.className = 'mb-4 p-4 rounded-xl bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
+      statusEl.textContent = 'Conto collegato con successo! Puoi ora sincronizzare le transazioni.';
+      statusEl.classList.remove('hidden');
+    } else if (status === 'error') {
+      statusEl.className = 'mb-4 p-4 rounded-xl bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
+      const messages: Record<string, string> = {
+        'missing_reference': 'Errore: riferimento mancante',
+        'connection_not_found': 'Connessione non trovata',
+        'expired': 'Autorizzazione scaduta, riprova',
+        'rejected': 'Autorizzazione rifiutata dalla banca',
+        'api_error': 'Errore di comunicazione con la banca'
+      };
+      statusEl.textContent = messages[message || ''] || 'Si è verificato un errore';
+      statusEl.classList.remove('hidden');
+    } else if (status === 'pending') {
+      statusEl.className = 'mb-4 p-4 rounded-xl bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200';
+      statusEl.textContent = 'Collegamento in attesa di conferma dalla banca. Riprova tra qualche minuto.';
+      statusEl.classList.remove('hidden');
+    }
+
+    // Clean URL
+    if (status) {
+      window.history.replaceState({}, '', '/banche');
+    }
+  }
+
+  async function loadConnections() {
+    try {
+      const res = await fetch('/api/bank/accounts');
+      connections = await res.json();
+      renderConnections();
+    } catch (error) {
+      console.error('Error loading connections:', error);
+    }
+  }
+
+  function renderConnections() {
+    const container = document.getElementById('accountsList')!;
+
+    if (!connections.length) {
+      container.innerHTML = `
+        <div class="text-center py-8">
+          <div class="text-4xl mb-4">🏦</div>
+          <p class="text-gray-500 dark:text-gray-400">Nessun conto collegato</p>
+          <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Collega il tuo conto bancario per importare automaticamente le transazioni</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = connections.map(conn => {
+      const statusBadge = {
+        'linked': '<span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Collegato</span>',
+        'pending': '<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">In attesa</span>',
+        'expired': '<span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Scaduto</span>',
+        'error': '<span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Errore</span>'
+      }[conn.status] || '';
+
+      const lastSync = conn.last_sync_at
+        ? new Date(conn.last_sync_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : 'Mai';
+
+      const expiresAt = conn.expires_at
+        ? new Date(conn.expires_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
+        : 'N/A';
+
+      const accountCount = conn.account_ids?.length || 0;
+
+      return `
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-2xl">
+              🏦
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-medium text-gray-900 dark:text-gray-100">${conn.institution_name || conn.institution_id}</span>
+                ${statusBadge}
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                ${accountCount} ${accountCount === 1 ? 'conto' : 'conti'} • Ultimo sync: ${lastSync}
+              </div>
+              <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                Scade: ${expiresAt}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 mt-4">
+            ${conn.status === 'linked' ? `
+              <button
+                class="sync-btn flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                data-id="${conn.id}"
+              >
+                🔄 Sincronizza
+              </button>
+            ` : ''}
+            <button
+              class="disconnect-btn py-2 px-4 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-sm"
+              data-id="${conn.id}"
+            >
+              Scollega
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Add event listeners
+    document.querySelectorAll('.sync-btn').forEach(btn => {
+      btn.addEventListener('click', () => syncConnection((btn as HTMLElement).dataset.id!));
+    });
+
+    document.querySelectorAll('.disconnect-btn').forEach(btn => {
+      btn.addEventListener('click', () => disconnectConnection((btn as HTMLElement).dataset.id!));
+    });
+  }
+
+  let pendingSyncConnectionId: string | null = null;
+
+  function openSyncConfigModal(connectionId: string) {
+    pendingSyncConnectionId = connectionId;
+    const modal = document.getElementById('syncConfigModal')!;
+    const dateInput = document.getElementById('syncDateFrom') as HTMLInputElement;
+
+    // Reset date input
+    dateInput.value = '';
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeSyncConfigModal() {
+    const modal = document.getElementById('syncConfigModal')!;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    pendingSyncConnectionId = null;
+  }
+
+  async function executeSync() {
+    if (!pendingSyncConnectionId) return;
+
+    const connectionId = pendingSyncConnectionId;
+    const dateFrom = (document.getElementById('syncDateFrom') as HTMLInputElement).value || undefined;
+
+    closeSyncConfigModal();
+
+    const syncModal = document.getElementById('syncModal')!;
+    syncModal.classList.remove('hidden');
+    syncModal.classList.add('flex');
+
+    try {
+      const res = await fetch('/api/bank/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          connection_id: connectionId,
+          date_from: dateFrom
+        })
+      });
+
+      const result = await res.json();
+
+      syncModal.classList.add('hidden');
+      syncModal.classList.remove('flex');
+
+      const statusEl = document.getElementById('statusMessage')!;
+      if (result.error) {
+        statusEl.className = 'mb-4 p-4 rounded-xl bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200';
+        statusEl.textContent = result.error;
+      } else {
+        statusEl.className = 'mb-4 p-4 rounded-xl bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
+
+        // Build detailed message
+        let msg = `Sincronizzazione completata: ${result.new} nuove transazioni importate`;
+        if (result.duplicates) msg += ` (${result.duplicates} già presenti)`;
+
+        // Add debug info
+        if (result.debug?.accounts?.length) {
+          const acc = result.debug.accounts[0];
+          msg += `\n\nDettagli: Nordigen ha restituito ${result.fetched} transazioni`;
+          if (acc.dateRange) {
+            msg += ` (dal ${acc.dateRange.oldest} al ${acc.dateRange.newest})`;
+          }
+          msg += `\nPeriodo richiesto: dal ${acc.dateFrom}`;
+        }
+
+        statusEl.innerHTML = msg.replace(/\n/g, '<br>');
+        console.log('Sync debug:', result.debug);
+      }
+      statusEl.classList.remove('hidden');
+
+      loadConnections();
+    } catch (error) {
+      syncModal.classList.add('hidden');
+      syncModal.classList.remove('flex');
+      alert('Errore nella sincronizzazione');
+    }
+  }
+
+  // Alias for button click
+  function syncConnection(connectionId: string) {
+    openSyncConfigModal(connectionId);
+  }
+
+  async function disconnectConnection(connectionId: string) {
+    if (!confirm('Sei sicuro di voler scollegare questo conto? Le transazioni già importate non verranno eliminate.')) {
+      return;
+    }
+
+    try {
+      await fetch('/api/bank/accounts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connection_id: connectionId })
+      });
+
+      loadConnections();
+    } catch (error) {
+      alert('Errore nella disconnessione');
+    }
+  }
+
+  async function loadInstitutions() {
+    try {
+      const res = await fetch('/api/bank/institutions');
+      const data = await res.json();
+
+      // Check for API errors
+      if (data.error) {
+        console.error('API error:', data);
+        document.getElementById('banksList')!.innerHTML = `
+          <div class="text-center py-8 text-red-500 dark:text-red-400">
+            <p>${data.error}</p>
+            <p class="text-sm mt-2">${data.details || ''}</p>
+          </div>
+        `;
+        return;
+      }
+
+      institutions = Array.isArray(data) ? data : [];
+      renderInstitutions();
+    } catch (error) {
+      console.error('Error loading institutions:', error);
+      document.getElementById('banksList')!.innerHTML = `
+        <div class="text-center py-8 text-red-500 dark:text-red-400">
+          Errore nel caricamento delle banche
+        </div>
+      `;
+    }
+  }
+
+  function renderInstitutions(filter: string = '') {
+    const container = document.getElementById('banksList')!;
+    const filtered = filter
+      ? institutions.filter(i => i.name.toLowerCase().includes(filter.toLowerCase()))
+      : institutions;
+
+    if (!filtered.length) {
+      container.innerHTML = `
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          Nessuna banca trovata
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = filtered.map(inst => `
+      <button
+        class="bank-item w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+        data-id="${inst.id}"
+        data-name="${inst.name}"
+      >
+        <img
+          src="${inst.logo}"
+          alt="${inst.name}"
+          class="w-10 h-10 rounded-lg object-contain bg-white"
+          onerror="this.style.display='none'"
+        />
+        <span class="font-medium text-gray-900 dark:text-gray-100">${inst.name}</span>
+      </button>
+    `).join('');
+
+    // Add click handlers
+    document.querySelectorAll('.bank-item').forEach(btn => {
+      btn.addEventListener('click', () => connectBank(
+        (btn as HTMLElement).dataset.id!,
+        (btn as HTMLElement).dataset.name!
+      ));
+    });
+  }
+
+  async function connectBank(institutionId: string, institutionName: string) {
+    try {
+      const res = await fetch('/api/bank/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          institution_id: institutionId,
+          institution_name: institutionName
+        })
+      });
+
+      const result = await res.json();
+
+      if (result.link) {
+        // Redirect to bank OAuth
+        window.location.href = result.link;
+      } else {
+        alert(result.error || 'Errore nella connessione');
+      }
+    } catch (error) {
+      alert('Errore nella connessione alla banca');
+    }
+  }
+
+  function openBankModal() {
+    const modal = document.getElementById('bankModal')!;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    loadInstitutions();
+  }
+
+  function closeBankModal() {
+    const modal = document.getElementById('bankModal')!;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  // Event listeners
+  document.getElementById('addBankBtn')?.addEventListener('click', openBankModal);
+  document.getElementById('cancelBankBtn')?.addEventListener('click', closeBankModal);
+  document.getElementById('bankModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeBankModal();
+  });
+
+  document.getElementById('bankSearch')?.addEventListener('input', (e) => {
+    renderInstitutions((e.target as HTMLInputElement).value);
+  });
+
+  // Sync config modal listeners
+  document.getElementById('cancelSyncBtn')?.addEventListener('click', closeSyncConfigModal);
+  document.getElementById('confirmSyncBtn')?.addEventListener('click', executeSync);
+  document.getElementById('syncConfigModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeSyncConfigModal();
+  });
+
+  // Initialize
+  checkStatus();
+  loadConnections();
+</script>

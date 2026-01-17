@@ -4,10 +4,10 @@ import AppLayout from '../layouts/AppLayout.astro';
 
 <AppLayout title="Report" activeNav="report">
   <!-- Year Selector -->
-  <div class="bg-white rounded-xl p-4 shadow-sm mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm mb-6">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-bold">Report Annuale</h2>
-      <select id="yearSelect" class="px-4 py-2 border border-gray-300 rounded-lg font-semibold">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Report Annuale</h2>
+      <select id="yearSelect" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
         <option value="">Caricamento...</option>
       </select>
     </div>
@@ -15,20 +15,20 @@ import AppLayout from '../layouts/AppLayout.astro';
 
   <!-- Summary Cards -->
   <div id="section-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-xl p-4 shadow-sm">
-      <p class="text-gray-500 text-sm">Totale Spese</p>
-      <p id="totalExpenses" class="text-2xl font-bold text-red-600">-</p>
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+      <p class="text-gray-500 dark:text-gray-400 text-sm">Totale Spese</p>
+      <p id="totalExpenses" class="text-2xl font-bold text-red-600 dark:text-red-400">-</p>
     </div>
-    <div class="bg-white rounded-xl p-4 shadow-sm">
-      <p class="text-gray-500 text-sm">Totale Entrate</p>
-      <p id="totalIncome" class="text-2xl font-bold text-green-600">-</p>
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+      <p class="text-gray-500 dark:text-gray-400 text-sm">Totale Entrate</p>
+      <p id="totalIncome" class="text-2xl font-bold text-green-600 dark:text-green-400">-</p>
     </div>
-    <div class="bg-white rounded-xl p-4 shadow-sm">
-      <p class="text-gray-500 text-sm">Media Mensile</p>
-      <p id="monthlyAvg" class="text-2xl font-bold text-gray-800">-</p>
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+      <p class="text-gray-500 dark:text-gray-400 text-sm">Media Mensile</p>
+      <p id="monthlyAvg" class="text-2xl font-bold text-gray-800 dark:text-gray-100">-</p>
     </div>
-    <div class="bg-white rounded-xl p-4 shadow-sm">
-      <p class="text-gray-500 text-sm">vs Anno Prec.</p>
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+      <p class="text-gray-500 dark:text-gray-400 text-sm">vs Anno Prec.</p>
       <p id="yearDiff" class="text-2xl font-bold">-</p>
     </div>
   </div>
@@ -36,8 +36,8 @@ import AppLayout from '../layouts/AppLayout.astro';
   <!-- Charts Row 1 -->
   <div class="grid lg:grid-cols-2 gap-6 mb-6">
     <!-- Monthly Trend -->
-    <div id="section-monthly" class="bg-white rounded-xl p-6 shadow-sm">
-      <h3 class="font-semibold mb-4">Andamento Mensile</h3>
+    <div id="section-monthly" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+      <h3 class="font-semibold mb-4 text-gray-900 dark:text-gray-100">Andamento Mensile</h3>
       <div id="monthlyChartContainer" class="h-64">
         <canvas id="monthlyChart"></canvas>
       </div>
@@ -50,8 +50,13 @@ import AppLayout from '../layouts/AppLayout.astro';
     </div>
 
     <!-- Category Breakdown -->
-    <div id="section-categories" class="bg-white rounded-xl p-6 shadow-sm">
-      <h3 class="font-semibold mb-4">Spese per Categoria</h3>
+    <div id="section-categories" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+      <div id="categoryHeader">
+        <button id="categoryBackBtn" class="hidden text-blue-600 dark:text-blue-400 text-sm mb-2 flex items-center gap-1 hover:underline">
+          ← Tutte le categorie
+        </button>
+        <h3 id="categoryTitle" class="font-semibold mb-4 text-gray-900 dark:text-gray-100">Spese per Categoria</h3>
+      </div>
       <div id="categoryChartContainer" class="h-64">
         <canvas id="categoryChart"></canvas>
       </div>
@@ -61,14 +66,16 @@ import AppLayout from '../layouts/AppLayout.astro';
           <p class="text-sm">Nessun dato disponibile</p>
         </div>
       </div>
+      <!-- Category Legend with click handlers -->
+      <div id="categoryLegend" class="mt-4 space-y-2 max-h-40 overflow-y-auto"></div>
     </div>
   </div>
 
   <!-- Charts Row 2 -->
   <div class="grid lg:grid-cols-2 gap-6 mb-6">
     <!-- Daily Average -->
-    <div id="section-dailyavg" class="bg-white rounded-xl p-6 shadow-sm">
-      <h3 class="font-semibold mb-4">Media Giornaliera per Mese</h3>
+    <div id="section-dailyavg" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+      <h3 class="font-semibold mb-4 text-gray-900 dark:text-gray-100">Media Giornaliera per Mese</h3>
       <div id="dailyAvgChartContainer" class="h-64">
         <canvas id="dailyAvgChart"></canvas>
       </div>
@@ -81,8 +88,8 @@ import AppLayout from '../layouts/AppLayout.astro';
     </div>
 
     <!-- Year Comparison -->
-    <div id="section-yearcompare" class="bg-white rounded-xl p-6 shadow-sm">
-      <h3 class="font-semibold mb-4">Confronto Annuale</h3>
+    <div id="section-yearcompare" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+      <h3 class="font-semibold mb-4 text-gray-900 dark:text-gray-100">Confronto Annuale</h3>
       <div id="yearCompareChartContainer" class="h-64">
         <canvas id="yearCompareChart"></canvas>
       </div>
@@ -97,12 +104,12 @@ import AppLayout from '../layouts/AppLayout.astro';
   </div>
 
   <!-- Top Expenses Table -->
-  <div id="section-topexpenses" class="bg-white rounded-xl p-6 shadow-sm mb-6">
-    <h3 class="font-semibold mb-4">Top 10 Spese dell'Anno</h3>
+  <div id="section-topexpenses" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm mb-6">
+    <h3 class="font-semibold mb-4 text-gray-900 dark:text-gray-100">Top 10 Spese dell'Anno</h3>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
-        <thead class="bg-gray-50">
-          <tr>
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr class="text-gray-900 dark:text-gray-100">
             <th class="px-4 py-3 text-left">#</th>
             <th class="px-4 py-3 text-left">Data</th>
             <th class="px-4 py-3 text-left">Categoria</th>
@@ -110,7 +117,7 @@ import AppLayout from '../layouts/AppLayout.astro';
             <th class="px-4 py-3 text-right">Importo</th>
           </tr>
         </thead>
-        <tbody id="topExpensesTable"></tbody>
+        <tbody id="topExpensesTable" class="text-gray-900 dark:text-gray-100"></tbody>
       </table>
     </div>
     <div id="topExpensesNoData" class="hidden py-8 text-center text-gray-400">
@@ -120,8 +127,8 @@ import AppLayout from '../layouts/AppLayout.astro';
   </div>
 
   <!-- Category Details -->
-  <div id="section-categorydetails" class="bg-white rounded-xl p-6 shadow-sm">
-    <h3 class="font-semibold mb-4">Dettaglio Categorie</h3>
+  <div id="section-categorydetails" class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+    <h3 class="font-semibold mb-4 text-gray-900 dark:text-gray-100">Dettaglio Categorie</h3>
     <div id="categoryDetails" class="space-y-3"></div>
     <div id="categoryDetailsNoData" class="hidden py-8 text-center text-gray-400">
       <div class="text-3xl mb-2">📁</div>
@@ -138,7 +145,16 @@ import AppLayout from '../layouts/AppLayout.astro';
   let dailyAvgChart: Chart | null = null;
   let yearCompareChart: Chart | null = null;
 
+  // Category drill-down state
+  let categoryParentId: number | null = null;
+  let categoryParentName: string | null = null;
+  let categoryParentIcon: string | null = null;
+  let currentCategories: any[] = [];
+
   const yearSelect = document.getElementById('yearSelect') as HTMLSelectElement;
+  const categoryBackBtn = document.getElementById('categoryBackBtn') as HTMLButtonElement;
+  const categoryTitle = document.getElementById('categoryTitle') as HTMLElement;
+  const categoryLegend = document.getElementById('categoryLegend') as HTMLElement;
 
   // Load report visibility settings
   function getVisibleSections(): Record<string, boolean> {
@@ -180,11 +196,35 @@ import AppLayout from '../layouts/AppLayout.astro';
     const res = await fetch(url);
     const data = await res.json();
 
+    // Check errori API
+    if (data.error) {
+      console.error('API Error:', data.error);
+      const currentYear = new Date().getFullYear().toString();
+      yearSelect.innerHTML = `<option value="${currentYear}">${currentYear}</option>`;
+      // Reset UI elements per mostrare stato vuoto
+      document.getElementById('totalExpenses')!.textContent = '-';
+      document.getElementById('totalIncome')!.textContent = '-';
+      document.getElementById('monthlyAvg')!.textContent = '-';
+      document.getElementById('yearDiff')!.textContent = '-';
+      return;
+    }
+
     // Populate year selector
     if (data.availableYears?.length) {
+      // Se l'anno richiesto non è tra quelli disponibili, usa il più recente
+      const yearToSelect = data.availableYears.includes(data.year)
+        ? data.year
+        : data.availableYears[0];
+
       yearSelect.innerHTML = data.availableYears
-        .map((y: string) => `<option value="${y}" ${y === data.year ? 'selected' : ''}>${y}</option>`)
+        .map((y: string) => `<option value="${y}" ${y === yearToSelect ? 'selected' : ''}>${y}</option>`)
         .join('');
+
+      // Se l'anno corrente non ha dati, ricarica con l'anno più recente disponibile
+      if (!data.availableYears.includes(data.year) && !year) {
+        loadReport(yearToSelect);
+        return;
+      }
     } else {
       yearSelect.innerHTML = `<option value="${data.year}">${data.year}</option>`;
     }
@@ -258,6 +298,18 @@ import AppLayout from '../layouts/AppLayout.astro';
     document.getElementById('categoryChartContainer')!.style.display = hasCategoryData ? '' : 'none';
     document.getElementById('categoryNoData')!.classList.toggle('hidden', hasCategoryData);
 
+    // Store categories for click handling
+    currentCategories = data.categories || [];
+
+    // Update header based on drill-down state
+    if (categoryParentId) {
+      categoryBackBtn.classList.remove('hidden');
+      categoryTitle.textContent = `${categoryParentIcon} ${categoryParentName}`;
+    } else {
+      categoryBackBtn.classList.add('hidden');
+      categoryTitle.textContent = 'Spese per Categoria';
+    }
+
     if (hasCategoryData) {
       categoryChart = new Chart(document.getElementById('categoryChart') as HTMLCanvasElement, {
         type: 'doughnut',
@@ -271,9 +323,14 @@ import AppLayout from '../layouts/AppLayout.astro';
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: 'right' } }
+          plugins: { legend: { display: false } } // Use custom legend below
         }
       });
+
+      // Render custom clickable legend
+      renderCategoryLegend(data.categories);
+    } else {
+      categoryLegend.innerHTML = '';
     }
 
     // Daily Average Chart
@@ -339,15 +396,20 @@ import AppLayout from '../layouts/AppLayout.astro';
     document.getElementById('topExpensesNoData')!.classList.toggle('hidden', hasTopExpenses);
 
     if (hasTopExpenses) {
-      tableBody.innerHTML = data.topExpenses.map((t: any, i: number) => `
-        <tr class="border-t">
-          <td class="px-4 py-3 text-gray-500">${i + 1}</td>
+      tableBody.innerHTML = data.topExpenses.map((t: any, i: number) => {
+        // Se ha parent, mostra "Parent > Child", altrimenti solo il nome categoria
+        const categoryDisplay = t.parent_name
+          ? `${t.parent_icon || ''} ${t.parent_name} › ${t.category_icon || ''} ${t.category_name}`
+          : `${t.category_icon || ''} ${t.category_name || 'N/A'}`;
+        return `
+        <tr class="border-t border-gray-200 dark:border-gray-700">
+          <td class="px-4 py-3 text-gray-500 dark:text-gray-400">${i + 1}</td>
           <td class="px-4 py-3">${new Date(t.date).toLocaleDateString('it-IT')}</td>
-          <td class="px-4 py-3">${t.category_icon || ''} ${t.category_name || 'N/A'}</td>
-          <td class="px-4 py-3 text-gray-600">${t.description || '-'}</td>
-          <td class="px-4 py-3 text-right font-semibold text-red-600">€${t.amount.toFixed(2)}</td>
+          <td class="px-4 py-3">${categoryDisplay}</td>
+          <td class="px-4 py-3 text-gray-600 dark:text-gray-400">${t.description || '-'}</td>
+          <td class="px-4 py-3 text-right font-semibold text-red-600 dark:text-red-400">€${t.amount.toFixed(2)}</td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     // Category Details
@@ -366,10 +428,10 @@ import AppLayout from '../layouts/AppLayout.astro';
             <span class="text-2xl w-10">${c.icon}</span>
             <div class="flex-1">
               <div class="flex justify-between mb-1">
-                <span class="font-medium">${c.name}</span>
-                <span class="text-gray-600">€${c.amount.toFixed(2)} (${percentage}%)</span>
+                <span class="font-medium text-gray-900 dark:text-gray-100">${c.name}</span>
+                <span class="text-gray-600 dark:text-gray-400">€${c.amount.toFixed(2)} (${percentage}%)</span>
               </div>
-              <div class="bg-gray-200 rounded-full h-2">
+              <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div class="h-2 rounded-full" style="width: ${barWidth}%; background-color: ${c.color}"></div>
               </div>
               <p class="text-xs text-gray-400 mt-1">${c.count} transazioni</p>
@@ -380,11 +442,110 @@ import AppLayout from '../layouts/AppLayout.astro';
     }
   }
 
+  // Render clickable category legend
+  function renderCategoryLegend(categories: any[]) {
+    const totalAmount = categories.reduce((sum, c) => sum + c.amount, 0);
+    categoryLegend.innerHTML = categories
+      .sort((a, b) => b.amount - a.amount)
+      .map(c => {
+        const hasChildren = c.hasChildren > 0 && !categoryParentId;
+        return `
+          <button
+            data-category-id="${c.id}"
+            data-category-name="${c.name}"
+            data-category-icon="${c.icon}"
+            data-has-children="${c.hasChildren || 0}"
+            class="w-full flex items-center justify-between text-sm py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100 ${hasChildren ? 'cursor-pointer' : 'cursor-default'}"
+          >
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" style="background-color: ${c.color || '#6B7280'}"></div>
+              <span>${c.icon} ${c.name}</span>
+              ${hasChildren ? '<span class="text-gray-400 text-xs">›</span>' : ''}
+            </div>
+            <span class="font-medium">€${c.amount.toFixed(2)}</span>
+          </button>
+        `;
+      }).join('');
+
+    // Add click handlers
+    categoryLegend.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const hasChildren = parseInt(btn.getAttribute('data-has-children') || '0');
+        if (hasChildren > 0 && !categoryParentId) {
+          categoryParentId = parseInt(btn.getAttribute('data-category-id') || '0');
+          categoryParentName = btn.getAttribute('data-category-name');
+          categoryParentIcon = btn.getAttribute('data-category-icon');
+          loadCategoryData(yearSelect.value);
+        }
+      });
+    });
+  }
+
+  // Load category data with optional parentId
+  async function loadCategoryData(year: string) {
+    let url = `/api/reports?year=${year}`;
+    if (categoryParentId) {
+      url += `&parentId=${categoryParentId}`;
+    }
+    const res = await fetch(url);
+    const data = await res.json();
+
+    // Update only the category chart
+    if (categoryChart) categoryChart.destroy();
+    const hasCategoryData = data.categories?.length > 0;
+    document.getElementById('categoryChartContainer')!.style.display = hasCategoryData ? '' : 'none';
+    document.getElementById('categoryNoData')!.classList.toggle('hidden', hasCategoryData);
+
+    currentCategories = data.categories || [];
+
+    // Update header
+    if (categoryParentId) {
+      categoryBackBtn.classList.remove('hidden');
+      categoryTitle.textContent = `${categoryParentIcon} ${categoryParentName}`;
+    } else {
+      categoryBackBtn.classList.add('hidden');
+      categoryTitle.textContent = 'Spese per Categoria';
+    }
+
+    if (hasCategoryData) {
+      categoryChart = new Chart(document.getElementById('categoryChart') as HTMLCanvasElement, {
+        type: 'doughnut',
+        data: {
+          labels: data.categories.map((c: any) => `${c.icon} ${c.name}`),
+          datasets: [{
+            data: data.categories.map((c: any) => c.amount),
+            backgroundColor: data.categories.map((c: any) => c.color || '#6B7280')
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } }
+        }
+      });
+      renderCategoryLegend(data.categories);
+    } else {
+      categoryLegend.innerHTML = '';
+    }
+  }
+
+  // Back button handler
+  categoryBackBtn.addEventListener('click', () => {
+    categoryParentId = null;
+    categoryParentName = null;
+    categoryParentIcon = null;
+    loadCategoryData(yearSelect.value);
+  });
+
   // Initial load
   loadReport();
 
   // Year change
   yearSelect.addEventListener('change', () => {
+    // Reset drill-down when year changes
+    categoryParentId = null;
+    categoryParentName = null;
+    categoryParentIcon = null;
     loadReport(yearSelect.value);
   });
 </script>

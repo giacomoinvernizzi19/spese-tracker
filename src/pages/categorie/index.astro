@@ -6,49 +6,49 @@ import AppLayout from '../../layouts/AppLayout.astro';
   <!-- Add Category Button -->
   <button
     id="addCategoryBtn"
-    class="w-full mb-6 py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors"
+    class="w-full lg:w-auto lg:px-6 mb-6 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-500 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-colors"
   >
     + Nuova Categoria
   </button>
 
-  <!-- Categories List -->
-  <div id="categoriesList" class="space-y-3">
+  <!-- Categories Grid - single column mobile, 2 columns desktop -->
+  <div id="categoriesList" class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
     <!-- Populated by JS -->
   </div>
 
   <!-- Add/Edit Modal -->
   <div id="categoryModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center">
-    <div class="bg-white rounded-2xl p-6 m-4 max-w-md w-full">
-      <h3 class="text-xl font-bold mb-4" id="modalTitle">Nuova Categoria</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 m-4 max-w-md w-full">
+      <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100" id="modalTitle">Nuova Categoria</h3>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nome</label>
           <input
             type="text"
             id="categoryName"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="es. Abbonamenti"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Sottocategoria di (opzionale)</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sottocategoria di (opzionale)</label>
           <select
             id="parentCategory"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             <option value="">- Categoria principale -</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Icona</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Icona</label>
           <div class="grid grid-cols-8 gap-2" id="iconPicker">
             {['🛒', '🍕', '🚗', '🏠', '💊', '☕', '🎁', '✈️', '📱', '🏃', '👗', '📦', '🎬', '📚', '🎮', '💇'].map(icon => (
               <button
                 type="button"
-                class="icon-btn w-10 h-10 text-xl rounded-lg border border-gray-200 hover:border-blue-500"
+                class="icon-btn w-10 h-10 text-xl rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400"
                 data-icon={icon}
               >
                 {icon}
@@ -58,7 +58,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Colore</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Colore</label>
           <div class="grid grid-cols-8 gap-2" id="colorPicker">
             {['#22C55E', '#F97316', '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#EF4444', '#06B6D4', '#6366F1', '#10B981', '#D946EF', '#6B7280'].map(color => (
               <button
@@ -70,12 +70,28 @@ import AppLayout from '../../layouts/AppLayout.astro';
             ))}
           </div>
         </div>
+
+        <div id="budgetSection" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Budget Mensile (opzionale)</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">€</span>
+            <input
+              type="number"
+              id="categoryBudget"
+              min="0"
+              step="10"
+              class="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="0"
+            />
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Imposta un limite di spesa mensile per questa categoria</p>
+        </div>
       </div>
 
       <div class="flex gap-3 mt-6">
         <button
           id="cancelBtn"
-          class="flex-1 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50"
+          class="flex-1 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
         >
           Annulla
         </button>
@@ -93,6 +109,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
 <script>
   let categories: any[] = [];
   let flatCategories: any[] = [];
+  let budgets: Map<string, number> = new Map();
   let selectedIcon = '📦';
   let selectedColor = '#6B7280';
   let editingId: number | null = null;
@@ -102,11 +119,24 @@ import AppLayout from '../../layouts/AppLayout.astro';
     try {
       // Carica formato gerarchico per la visualizzazione
       const res = await fetch('/api/categories?hierarchical=true');
-      categories = await res.json();
+      const categoriesData = await res.json();
+      categories = Array.isArray(categoriesData) ? categoriesData : [];
 
       // Carica anche formato piatto per il select parent
       const flatRes = await fetch('/api/categories');
-      flatCategories = await flatRes.json();
+      const flatData = await flatRes.json();
+      flatCategories = Array.isArray(flatData) ? flatData : [];
+
+      // Carica budgets (può fallire se non ci sono budget, non deve bloccare il rendering)
+      try {
+        const budgetRes = await fetch('/api/budgets');
+        const budgetList = await budgetRes.json();
+        if (Array.isArray(budgetList)) {
+          budgets = new Map(budgetList.map((b: any) => [b.category_id, b.amount]));
+        }
+      } catch (budgetError) {
+        console.warn('Could not load budgets:', budgetError);
+      }
 
       renderCategories();
       populateParentSelect();
@@ -126,10 +156,14 @@ import AppLayout from '../../layouts/AppLayout.astro';
   function renderCategories() {
     const container = document.getElementById('categoriesList')!;
 
-    container.innerHTML = categories.map(cat => `
-      <div class="space-y-2">
+    container.innerHTML = categories.map(cat => {
+      const budget = budgets.get(cat.id);
+      const budgetDisplay = budget ? `<div class="text-xs text-blue-600 dark:text-blue-400">Budget: €${budget.toFixed(0)}/mese</div>` : '';
+
+      return `
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
         <!-- Categoria Parent -->
-        <div class="bg-white rounded-xl p-4 shadow-sm flex items-center gap-4">
+        <div class="p-4 flex items-center gap-4 border-b border-gray-100 dark:border-gray-700">
           <div
             class="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
             style="background-color: ${cat.color}20"
@@ -137,11 +171,12 @@ import AppLayout from '../../layouts/AppLayout.astro';
             ${cat.icon}
           </div>
           <div class="flex-1">
-            <div class="font-medium text-gray-900">${cat.name}</div>
-            ${cat.children?.length ? `<div class="text-xs text-gray-500">${cat.children.length} sottocategorie</div>` : ''}
+            <div class="font-medium text-gray-900 dark:text-gray-100">${cat.name}</div>
+            ${cat.children?.length ? `<div class="text-xs text-gray-500 dark:text-gray-400">${cat.children.length} sottocategorie</div>` : ''}
+            ${budgetDisplay}
           </div>
           <button
-            class="edit-btn p-2 text-gray-400 hover:text-blue-600"
+            class="edit-btn p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
             data-id="${cat.id}"
             data-name="${cat.name}"
             data-icon="${cat.icon}"
@@ -152,32 +187,35 @@ import AppLayout from '../../layouts/AppLayout.astro';
           </button>
         </div>
 
-        <!-- Sottocategorie (indentate) -->
-        ${cat.children?.map((sub: any) => `
-          <div class="bg-white rounded-xl p-3 shadow-sm flex items-center gap-3 ml-6 border-l-4" style="border-color: ${sub.color}">
-            <div
-              class="w-10 h-10 rounded-full flex items-center justify-center text-xl"
-              style="background-color: ${sub.color}20"
-            >
-              ${sub.icon}
-            </div>
-            <div class="flex-1">
-              <div class="font-medium text-gray-900 text-sm">${sub.name}</div>
-            </div>
-            <button
-              class="edit-btn p-2 text-gray-400 hover:text-blue-600"
-              data-id="${sub.id}"
-              data-name="${sub.name}"
-              data-icon="${sub.icon}"
-              data-color="${sub.color}"
-              data-parent-id="${cat.id}"
-            >
-              ✏️
-            </button>
+        ${cat.children?.length ? `
+          <div class="divide-y divide-gray-100 dark:divide-gray-700">
+            ${cat.children.map((sub: any) => `
+              <div class="p-3 flex items-center gap-3 pl-6 border-l-4" style="border-color: ${sub.color}">
+                <div
+                  class="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+                  style="background-color: ${sub.color}20"
+                >
+                  ${sub.icon}
+                </div>
+                <div class="flex-1">
+                  <div class="font-medium text-gray-900 dark:text-gray-100 text-sm">${sub.name}</div>
+                </div>
+                <button
+                  class="edit-btn p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                  data-id="${sub.id}"
+                  data-name="${sub.name}"
+                  data-icon="${sub.icon}"
+                  data-color="${sub.color}"
+                  data-parent-id="${cat.id}"
+                >
+                  ✏️
+                </button>
+              </div>
+            `).join('')}
           </div>
-        `).join('') || ''}
+        ` : ''}
       </div>
-    `).join('');
+    `;}).join('');
 
     // Add edit handlers
     document.querySelectorAll('.edit-btn').forEach(btn => {
@@ -191,6 +229,19 @@ import AppLayout from '../../layouts/AppLayout.astro';
         (document.getElementById('parentCategory') as HTMLSelectElement).value = selectedParentId?.toString() || '';
         updateSelections();
         document.getElementById('modalTitle')!.textContent = 'Modifica Categoria';
+
+        // Show budget section only for root categories (no parent)
+        const budgetSection = document.getElementById('budgetSection')!;
+        const budgetInput = document.getElementById('categoryBudget') as HTMLInputElement;
+        if (!selectedParentId) {
+          budgetSection.classList.remove('hidden');
+          const existingBudget = budgets.get(editingId!.toString());
+          budgetInput.value = existingBudget ? existingBudget.toString() : '';
+        } else {
+          budgetSection.classList.add('hidden');
+          budgetInput.value = '';
+        }
+
         openModal();
       });
     });
@@ -208,6 +259,8 @@ import AppLayout from '../../layouts/AppLayout.astro';
     selectedParentId = null;
     (document.getElementById('categoryName') as HTMLInputElement).value = '';
     (document.getElementById('parentCategory') as HTMLSelectElement).value = '';
+    (document.getElementById('categoryBudget') as HTMLInputElement).value = '';
+    document.getElementById('budgetSection')!.classList.add('hidden');
     selectedIcon = '📦';
     selectedColor = '#6B7280';
     updateSelections();
@@ -230,7 +283,11 @@ import AppLayout from '../../layouts/AppLayout.astro';
   }
 
   // Event listeners
-  document.getElementById('addCategoryBtn')?.addEventListener('click', openModal);
+  document.getElementById('addCategoryBtn')?.addEventListener('click', () => {
+    // Show budget section for new categories (default is root category)
+    document.getElementById('budgetSection')!.classList.remove('hidden');
+    openModal();
+  });
   document.getElementById('cancelBtn')?.addEventListener('click', closeModal);
   document.getElementById('categoryModal')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeModal();
@@ -250,6 +307,18 @@ import AppLayout from '../../layouts/AppLayout.astro';
     });
   });
 
+  // Show/hide budget section based on parent selection
+  document.getElementById('parentCategory')?.addEventListener('change', (e) => {
+    const value = (e.target as HTMLSelectElement).value;
+    selectedParentId = value ? parseInt(value) : null;
+    const budgetSection = document.getElementById('budgetSection')!;
+    if (selectedParentId) {
+      budgetSection.classList.add('hidden');
+    } else {
+      budgetSection.classList.remove('hidden');
+    }
+  });
+
   document.getElementById('saveBtn')?.addEventListener('click', async () => {
     const name = (document.getElementById('categoryName') as HTMLInputElement).value.trim();
     if (!name) return alert('Inserisci un nome');
@@ -258,11 +327,26 @@ import AppLayout from '../../layouts/AppLayout.astro';
       const method = editingId ? 'PUT' : 'POST';
       const url = editingId ? `/api/categories/${editingId}` : '/api/categories';
 
-      await fetch(url, {
+      const categoryRes = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, icon: selectedIcon, color: selectedColor, parent_id: selectedParentId })
       });
+
+      // Save budget if it's a root category (no parent) and budget is specified
+      if (!selectedParentId) {
+        const budgetValue = (document.getElementById('categoryBudget') as HTMLInputElement).value;
+        const budgetAmount = parseFloat(budgetValue);
+        const categoryId = editingId || (await categoryRes.json()).id;
+
+        if (budgetAmount > 0) {
+          await fetch('/api/budgets', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category_id: categoryId, amount: budgetAmount, period: 'monthly' })
+          });
+        }
+      }
 
       closeModal();
       loadCategories();

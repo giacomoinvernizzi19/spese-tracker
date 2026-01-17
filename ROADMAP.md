@@ -34,11 +34,14 @@ Questo file raccoglie tutte le idee e funzionalità da implementare in futuro.
 ## v2.0 - Integrazione Bancaria
 
 ### Nordigen/GoCardless Bank Sync
-- [ ] Collegamento conto bancario
-- [ ] Import automatico movimenti
-- [ ] Categorizzazione automatica basata su storico
+- [x] Collegamento conto bancario
+- [x] Import movimenti (sync manuale)
+- [x] Categorizzazione automatica basata su storico
+- [ ] **Sync automatico giornaliero** (Cloudflare Cron Triggers) - priorità alta
+- [ ] **Deduplicazione Excel vs Bank** - match per data+importo+descrizione - priorità alta
 - [ ] Riconciliazione spese manuali vs bancarie
-- [ ] Supporto multi-conto
+- [x] Supporto multi-conto
+- [ ] Notifica quando collegamento sta per scadere (90 giorni)
 
 ### Multi-Utente Avanzato
 - [ ] Condivisione budget familiare

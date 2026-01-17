@@ -1,10 +1,11 @@
 ---
 import '../styles/global.css';
+import Sidebar from '../components/nav/Sidebar.astro';
 
 interface Props {
   title?: string;
   description?: string;
-  activeNav?: 'home' | 'transactions' | 'categories' | 'report' | 'settings';
+  activeNav?: 'home' | 'transactions' | 'new' | 'categories' | 'report' | 'settings';
 }
 
 const {
@@ -28,43 +29,59 @@ const navItems = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#3B82F6" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>{title}</title>
   </head>
-  <body class="min-h-screen bg-gray-50 text-gray-900 pb-20">
-    <!-- Header -->
-    <header class="bg-blue-600 text-white sticky top-0 z-40 shadow-lg">
-      <div class="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-        <h1 class="text-xl font-bold">{title}</h1>
-        <div class="flex items-center gap-3">
-          <span id="userName" class="text-sm opacity-90"></span>
-          <button
-            id="logoutBtn"
-            class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded-lg transition-colors hidden"
-          >
-            Esci
-          </button>
+  <body class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50 transition-colors">
+    <!-- Sidebar Desktop -->
+    <Sidebar activeNav={activeNav} />
+
+    <!-- Main wrapper - offset per sidebar su desktop -->
+    <div class="lg:ml-64">
+      <!-- Header Mobile -->
+      <header class="lg:hidden bg-blue-600 text-white sticky top-0 z-40 shadow-lg">
+        <div class="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 class="text-xl font-bold">{title}</h1>
+          <div class="flex items-center gap-3">
+            <span id="userName" class="text-sm opacity-90"></span>
+            <button
+              id="logoutBtn"
+              class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded-lg transition-colors hidden"
+            >
+              Esci
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
 
-    <!-- Main Content -->
-    <main class="max-w-lg mx-auto px-4 py-6">
-      <slot />
-    </main>
+      <!-- Header Desktop (titolo pagina) -->
+      <header class="hidden lg:block bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-6 py-4">
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{title}</h1>
+        </div>
+      </header>
 
-    <!-- Bottom Navigation (Mobile) -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <!-- Main Content - responsive max-width -->
+      <main class="max-w-lg lg:max-w-6xl mx-auto px-4 lg:px-6 py-6 pb-24 lg:pb-6">
+        <slot />
+      </main>
+    </div>
+
+    <!-- Bottom Navigation - solo mobile -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
       <div class="max-w-lg mx-auto flex justify-around items-center h-16">
         {navItems.map(item => (
           <a
             href={item.href}
             class={`flex flex-col items-center justify-center w-full h-full transition-colors ${
               activeNav === item.id
-                ? 'text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             <span class="text-xl">{item.icon}</span>
@@ -74,10 +91,10 @@ const navItems = [
       </div>
     </nav>
 
-    <!-- Floating Action Button per aggiungere spesa -->
+    <!-- FAB per aggiungere spesa - solo mobile -->
     <a
       href="/nuova"
-      class="fixed bottom-20 right-4 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-blue-700 transition-colors z-50"
+      class="lg:hidden fixed bottom-20 right-4 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-blue-700 transition-colors z-50"
       aria-label="Nuova spesa"
     >
       +
@@ -86,8 +103,14 @@ const navItems = [
 </html>
 
 <script>
+  import { initTheme } from '../lib/theme';
+
+  // Initialize theme before rendering
+  initTheme();
+
   // Auth check and logout handler
   const userNameEl = document.getElementById('userName');
+  const sidebarUserNameEl = document.getElementById('sidebarUserName');
   const logoutBtn = document.getElementById('logoutBtn');
 
   // Check authentication
@@ -98,11 +121,15 @@ const navItems = [
         window.location.href = '/login';
         return;
       }
-      // Show user name
+      // Show user name (mobile header)
       if (userNameEl && data.user?.name) {
         userNameEl.textContent = data.user.name;
       }
-      // Show logout button
+      // Show user name (sidebar desktop)
+      if (sidebarUserNameEl && data.user?.name) {
+        sidebarUserNameEl.textContent = data.user.name;
+      }
+      // Show logout button (mobile)
       if (logoutBtn) {
         logoutBtn.classList.remove('hidden');
       }
@@ -111,7 +138,7 @@ const navItems = [
       window.location.href = '/login';
     });
 
-  // Logout handler
+  // Logout handler (mobile)
   logoutBtn?.addEventListener('click', async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -120,6 +147,13 @@ const navItems = [
       console.error('Logout error:', error);
     }
   });
+
+  // Register Service Worker for PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.error('SW registration failed:', error);
+    });
+  }
 </script>
 
 <style>
@@ -128,13 +162,15 @@ const navItems = [
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Safe area per dispositivi con notch */
+  /* Safe area per dispositivi con notch - solo mobile */
   @supports (padding-bottom: env(safe-area-inset-bottom)) {
-    nav {
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    body {
-      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    @media (max-width: 1023px) {
+      nav {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      body {
+        padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+      }
     }
   }
 </style>

@@ -13,6 +13,9 @@
 	"observability": {
 		"enabled": true
 	},
+	"vars": {
+		"APP_URL": "https://spese-tracker.g-invernizzi-jm.workers.dev"
+	},
 	"d1_databases": [
 		{
 			"binding": "DB",
@@ -20,4 +23,10 @@
 			"database_id": "cb795d69-0853-4c77-98c3-a294bcbbe5a4"
 		}
 	]
+	// Secrets (configure via wrangler secret put):
+	// - NORDIGEN_SECRET_ID: Nordigen/GoCardless API ID
+	// - NORDIGEN_SECRET_KEY: Nordigen/GoCardless API key
+	// - RESEND_API_KEY: Resend email service API key
+	// - ENCRYPTION_KEY: 256-bit AES key for bank data encryption (hex string, 64 chars)
+	//   Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 }

@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { verifyPassword, createSession } from '../../../lib/auth';
+import { checkRateLimit, resetRateLimit, getClientIP, rateLimitResponse } from '../../../lib/rate-limiter';
 
 export const prerender = false;
 
@@ -17,6 +18,13 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+
+    // Rate limiting check
+    const ip = getClientIP(request);
+    const rateLimit = await checkRateLimit(db, 'login', ip, email);
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.retryAfterSeconds!);
     }
 
     // Find user
@@ -47,6 +55,9 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // Reset rate limit on successful login
+    await resetRateLimit(db, 'login', ip, email);
 
     // Create session
     await createSession(db, user.id, cookies);

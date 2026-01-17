@@ -19,6 +19,7 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
 
   const url = new URL(request.url);
   const year = url.searchParams.get('year') || new Date().getFullYear().toString();
+  const parentId = url.searchParams.get('parentId'); // Per drill-down sottocategorie
 
   try {
     // Spese per mese dell'anno selezionato
@@ -34,22 +35,65 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
     `).bind(user.id, year).all();
 
     // Spese per categoria dell'anno
-    const categoryData = await db.prepare(`
-      SELECT
-        c.name,
-        c.icon,
-        c.color,
-        SUM(t.amount) as amount,
-        COUNT(t.id) as count
-      FROM categories c
-      LEFT JOIN transactions t ON c.id = t.category_id
-        AND strftime('%Y', t.date) = ?
-        AND t.type = 'expense'
-      WHERE c.user_id = ?
-      GROUP BY c.id
-      HAVING amount > 0
-      ORDER BY amount DESC
-    `).bind(year, user.id).all();
+    let categoryData;
+    if (parentId) {
+      // Drill-down: mostra solo sottocategorie del parent specificato
+      categoryData = await db.prepare(`
+        SELECT
+          c.id,
+          c.name,
+          c.icon,
+          c.color,
+          SUM(t.amount) as amount,
+          COUNT(t.id) as count,
+          0 as hasChildren
+        FROM categories c
+        LEFT JOIN transactions t ON c.id = t.category_id
+          AND strftime('%Y', t.date) = ?
+          AND t.type = 'expense'
+        WHERE c.parent_id = ?
+        GROUP BY c.id
+        HAVING amount > 0
+        ORDER BY amount DESC
+      `).bind(year, parentId).all();
+    } else {
+      // Vista default: categorie padre con importi aggregati (include sottocategorie)
+      // Usa subquery wrapping per filtrare amount > 0 (HAVING non funziona con alias di subquery in SQLite)
+      categoryData = await db.prepare(`
+        SELECT * FROM (
+          SELECT
+            parent.id,
+            parent.name,
+            parent.icon,
+            parent.color,
+            (
+              SELECT COALESCE(SUM(t.amount), 0)
+              FROM transactions t
+              WHERE t.type = 'expense'
+                AND strftime('%Y', t.date) = ?
+                AND (
+                  t.category_id = parent.id
+                  OR t.category_id IN (SELECT id FROM categories WHERE parent_id = parent.id)
+                )
+            ) as amount,
+            (
+              SELECT COUNT(t.id)
+              FROM transactions t
+              WHERE t.type = 'expense'
+                AND strftime('%Y', t.date) = ?
+                AND (
+                  t.category_id = parent.id
+                  OR t.category_id IN (SELECT id FROM categories WHERE parent_id = parent.id)
+                )
+            ) as count,
+            (SELECT COUNT(*) FROM categories WHERE parent_id = parent.id) as hasChildren
+          FROM categories parent
+          WHERE parent.user_id = ?
+            AND parent.parent_id IS NULL
+        ) WHERE amount > 0
+        ORDER BY amount DESC
+      `).bind(year, year, user.id).all();
+    }
 
     // Confronto anno precedente
     const prevYear = (parseInt(year) - 1).toString();
@@ -64,15 +108,20 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
     `).bind(user.id, year, prevYear).all();
 
     // Top 10 spese più alte dell'anno
+    // Include parent category per mostrare "Viaggio > Voli" quando la transazione
+    // è associata a una sottocategoria
     const topExpenses = await db.prepare(`
       SELECT
         t.amount,
         t.description,
         t.date,
         c.name as category_name,
-        c.icon as category_icon
+        c.icon as category_icon,
+        parent.name as parent_name,
+        parent.icon as parent_icon
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.id
+      LEFT JOIN categories parent ON c.parent_id = parent.id
       WHERE t.user_id = ? AND strftime('%Y', t.date) = ?
         AND t.type = 'expense'
       ORDER BY t.amount DESC

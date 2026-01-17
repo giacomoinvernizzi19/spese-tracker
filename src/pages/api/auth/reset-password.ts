@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { validatePassword, hashPassword } from '../../../lib/auth';
+import { validatePassword, hashPassword, timingSafeEqual } from '../../../lib/auth';
 
 export const prerender = false;
 
@@ -35,27 +35,41 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Find token in database
+    // Note: Using timing-safe comparison for the token value
     const resetToken = await db.prepare(`
-      SELECT id, user_id, expires_at, used
+      SELECT id, user_id, token, expires_at, used
       FROM password_reset_tokens
-      WHERE token = ?
-    `).bind(token).first<{
+      WHERE id IN (SELECT id FROM password_reset_tokens ORDER BY created_at DESC LIMIT 100)
+    `).bind().all<{
       id: string;
       user_id: string;
+      token: string;
       expires_at: string;
       used: number;
     }>();
 
-    // Token not found
-    if (!resetToken) {
+    // Find matching token using timing-safe comparison
+    let matchedToken: { id: string; user_id: string; token: string; expires_at: string; used: number } | null = null;
+    for (const t of resetToken.results || []) {
+      if (timingSafeEqual(t.token, token)) {
+        matchedToken = t;
+        break;
+      }
+    }
+
+    // Token not found - use same error message for security
+    if (!matchedToken) {
       return new Response(JSON.stringify({ error: 'Token non valido o scaduto' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
+    // Alias for compatibility with rest of code
+    const tokenData = matchedToken;
+
     // Token already used
-    if (resetToken.used === 1) {
+    if (tokenData.used === 1) {
       return new Response(JSON.stringify({ error: 'Token non valido o scaduto' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -63,7 +77,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Token expired
-    const expiresAt = new Date(resetToken.expires_at);
+    const expiresAt = new Date(tokenData.expires_at);
     if (expiresAt < new Date()) {
       return new Response(JSON.stringify({ error: 'Token non valido o scaduto' }), {
         status: 400,
@@ -77,17 +91,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Update user password
     await db.prepare(`
       UPDATE users SET password_hash = ? WHERE id = ?
-    `).bind(passwordHash, resetToken.user_id).run();
+    `).bind(passwordHash, tokenData.user_id).run();
 
     // Mark token as used
     await db.prepare(`
       UPDATE password_reset_tokens SET used = 1 WHERE id = ?
-    `).bind(resetToken.id).run();
+    `).bind(tokenData.id).run();
 
-    // Optional: Delete all sessions for this user (force re-login)
+    // Delete all sessions for this user (force re-login)
     await db.prepare(`
       DELETE FROM sessions WHERE user_id = ?
-    `).bind(resetToken.user_id).run();
+    `).bind(tokenData.user_id).run();
 
     return new Response(JSON.stringify({
       success: true,

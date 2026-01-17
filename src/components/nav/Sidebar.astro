@@ -1,0 +1,72 @@
+---
+interface Props {
+  activeNav?: string;
+  userName?: string;
+}
+const { activeNav, userName } = Astro.props;
+
+const navItems = [
+  { href: '/', icon: '🏠', label: 'Dashboard', id: 'home' },
+  { href: '/transazioni', icon: '📋', label: 'Transazioni', id: 'transactions' },
+  { href: '/nuova', icon: '➕', label: 'Nuova Spesa', id: 'new' },
+  { href: '/report', icon: '📊', label: 'Report', id: 'report' },
+  { href: '/categorie', icon: '📁', label: 'Categorie', id: 'categories' },
+  { href: '/impostazioni', icon: '⚙️', label: 'Impostazioni', id: 'settings' },
+];
+---
+
+<aside class="hidden lg:flex flex-col fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40">
+  <!-- Logo -->
+  <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">💰</span>
+      <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">Spese Tracker</h1>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+    {navItems.map(item => (
+      <a
+        href={item.href}
+        class={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+          activeNav === item.id
+            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium'
+            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+        }`}
+      >
+        <span class="text-xl">{item.icon}</span>
+        <span>{item.label}</span>
+      </a>
+    ))}
+  </nav>
+
+  <!-- User section -->
+  <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-3 px-4 py-2 mb-2">
+      <span class="text-xl">👤</span>
+      <span id="sidebarUserName" class="text-sm text-gray-600 dark:text-gray-400 truncate">Caricamento...</span>
+    </div>
+    <button
+      id="sidebarLogoutBtn"
+      class="w-full flex items-center gap-3 px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+    >
+      <span>🚪</span>
+      <span>Logout</span>
+    </button>
+  </div>
+</aside>
+
+<script>
+  // Sidebar logout handler
+  const sidebarLogoutBtn = document.getElementById('sidebarLogoutBtn');
+
+  sidebarLogoutBtn?.addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  });
+</script>

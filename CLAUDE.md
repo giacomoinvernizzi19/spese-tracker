@@ -83,20 +83,26 @@ Il file `.env` sovrascrive le credenziali globali. NON è committato (in .gitign
 
 ## Current Status
 
-**Version**: 0.0.1 (Initial commit)
+**Version**: 0.2.0 (Bank Sync)
 
 **Implemented**:
 - User auth (register, login, logout)
 - CRUD transactions
-- Categories management
+- Categories management (hierarchical, budget)
 - Statistics & charts
 - Excel import
 - Reports export
+- Budget per categoria
+- Dark mode (partial)
+- Auto-categorizzazione
+- PWA Offline
+- Nordigen Bank Sync
 
 **Next** (from ROADMAP.md):
-- Budget per categoria
-- Dark mode
+- Test bank sync con banca reale
+- Completare dark mode
 - Export PDF
+- PWA icons PNG
 
 ---
 
@@ -119,11 +125,29 @@ Quando termini una sessione, aggiorna la sezione sotto:
 
 ## Last Session Handoff
 
-**Data**: (da aggiornare)
-**Account/PC**: (da aggiornare)
-**Lavoro svolto**: (da aggiornare)
-**Prossimi step**: (da aggiornare)
-**Note/Blocchi**: (da aggiornare)
+**Data**: 2026-01-11
+**Account/PC**: Giacomo PC (sessione continuata)
+**Lavoro svolto**:
+- Feature: Nordigen Bank Sync (completo)
+  - Migration 0004_bank_connections.sql eseguita
+  - Client Nordigen (src/lib/nordigen.ts) con token refresh, institutions, requisitions, transactions
+  - API endpoints: /api/bank/institutions, /api/bank/connect, /api/bank/callback, /api/bank/accounts, /api/bank/sync
+  - UI /banche page con lista account, modal selezione banca, sync, disconnect
+  - Link in /impostazioni -> Conti Bancari
+  - Secrets configurati: NORDIGEN_SECRET_ID, NORDIGEN_SECRET_KEY
+  - wrangler.jsonc aggiornato con APP_URL variable
+- Deploy completato su https://spese-tracker.g-invernizzi-jm.workers.dev
+
+**Prossimi step**:
+- Testare integrazione con banca reale (OAuth flow)
+- Completare dark mode per pagine rimanenti (nuova, transazioni, login, registrati, etc.)
+- Aggiungere icone PNG per PWA (192x192, 512x512)
+- Test offline e sync queue per operazioni offline
+
+**Note/Blocchi**:
+- Nordigen rate limit: 10 requests/day per scope per account - sync manuale consigliato
+- OAuth scade dopo 90 giorni - UI mostra expiry date
+- PWA usa SVG icon come placeholder, per iOS serve PNG
 
 ---
 

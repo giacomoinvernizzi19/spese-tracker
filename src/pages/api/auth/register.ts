@@ -8,6 +8,7 @@ import {
   validatePassword,
   validateName
 } from '../../../lib/auth';
+import { checkRateLimit, getClientIP, rateLimitResponse } from '../../../lib/rate-limiter';
 
 export const prerender = false;
 
@@ -18,6 +19,13 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
   try {
     const body = await request.json();
     const { email, password, name } = body;
+
+    // Rate limiting check (IP only for registration)
+    const ip = getClientIP(request);
+    const rateLimit = await checkRateLimit(db, 'register', ip);
+    if (!rateLimit.allowed) {
+      return rateLimitResponse(rateLimit.retryAfterSeconds!);
+    }
 
     // Validation
     if (!email || !password || !name) {

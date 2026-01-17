@@ -3,120 +3,184 @@ import AppLayout from '../layouts/AppLayout.astro';
 ---
 
 <AppLayout title="Impostazioni" activeNav="settings">
-  <!-- Import/Export Section -->
-  <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-    <div class="p-4 border-b bg-gray-50">
-      <h2 class="font-bold text-lg">Dati</h2>
-    </div>
-    <div class="divide-y">
-      <a href="/importa" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">📥</span>
-          <div>
-            <p class="font-medium">Importa da Excel</p>
-            <p class="text-sm text-gray-500">Carica spese da file .xlsx</p>
-          </div>
+  <!-- Desktop: 2 columns / Mobile: single column -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Left Column: Dati + Gestione -->
+    <div class="space-y-6">
+      <!-- Import/Export Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <h2 class="font-bold text-lg dark:text-gray-100">Dati</h2>
         </div>
-        <span class="text-gray-400">→</span>
-      </a>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+          <a href="/importa" class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">📥</span>
+              <div>
+                <p class="font-medium dark:text-gray-100">Importa da Excel</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Carica spese da file .xlsx</p>
+              </div>
+            </div>
+            <span class="text-gray-400">→</span>
+          </a>
 
-      <button id="exportBtn" class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">📤</span>
-          <div>
-            <p class="font-medium">Esporta in Excel</p>
-            <p class="text-sm text-gray-500">Scarica tutte le spese</p>
-          </div>
+          <button id="exportBtn" class="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">📤</span>
+              <div>
+                <p class="font-medium dark:text-gray-100">Esporta in Excel</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Scarica tutte le spese</p>
+              </div>
+            </div>
+            <span class="text-gray-400">→</span>
+          </button>
         </div>
-        <span class="text-gray-400">→</span>
-      </button>
-    </div>
-  </div>
+      </div>
 
-  <!-- Categories Section -->
-  <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-    <div class="p-4 border-b bg-gray-50">
-      <h2 class="font-bold text-lg">Gestione</h2>
-    </div>
-    <div class="divide-y">
-      <a href="/categorie" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">📁</span>
-          <div>
-            <p class="font-medium">Categorie</p>
-            <p class="text-sm text-gray-500">Gestisci le categorie di spesa</p>
-          </div>
+      <!-- Categories Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <h2 class="font-bold text-lg dark:text-gray-100">Gestione</h2>
         </div>
-        <span class="text-gray-400">→</span>
-      </a>
-    </div>
-  </div>
-
-  <!-- Report Sections -->
-  <div class="bg-white rounded-xl shadow-sm mb-6 overflow-hidden">
-    <div class="p-4 border-b bg-gray-50">
-      <h2 class="font-bold text-lg">Sezioni Report</h2>
-      <p class="text-sm text-gray-500 mt-1">Scegli quali grafici mostrare nella pagina Report</p>
-    </div>
-    <div class="p-4 space-y-3">
-      <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-sm">Riepilogo (totali)</span>
-        <input type="checkbox" id="toggle-summary" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
-      </label>
-      <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-sm">Andamento Mensile</span>
-        <input type="checkbox" id="toggle-monthly" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
-      </label>
-      <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-sm">Spese per Categoria</span>
-        <input type="checkbox" id="toggle-categories" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
-      </label>
-      <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-sm">Media Giornaliera per Mese</span>
-        <input type="checkbox" id="toggle-dailyavg" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
-      </label>
-      <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-sm">Confronto Annuale</span>
-        <input type="checkbox" id="toggle-yearcompare" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
-      </label>
-      <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-sm">Top 10 Spese</span>
-        <input type="checkbox" id="toggle-topexpenses" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
-      </label>
-      <label class="flex items-center justify-between cursor-pointer">
-        <span class="text-sm">Dettaglio Categorie</span>
-        <input type="checkbox" id="toggle-categorydetails" class="report-toggle w-5 h-5 rounded text-blue-600" checked>
-      </label>
-    </div>
-  </div>
-
-  <!-- Danger Zone -->
-  <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-    <div class="p-4 border-b bg-red-50">
-      <h2 class="font-bold text-lg text-red-700">Zona Pericolosa</h2>
-    </div>
-    <div class="divide-y">
-      <button id="deleteAllBtn" class="w-full flex items-center justify-between p-4 hover:bg-red-50 transition-colors text-left">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">🗑️</span>
-          <div>
-            <p class="font-medium text-red-600">Elimina tutte le spese</p>
-            <p class="text-sm text-gray-500">Questa azione non può essere annullata</p>
-          </div>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+          <a href="/categorie" class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">📁</span>
+              <div>
+                <p class="font-medium dark:text-gray-100">Categorie</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Gestisci le categorie di spesa</p>
+              </div>
+            </div>
+            <span class="text-gray-400">→</span>
+          </a>
+          <a href="/banche" class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🏦</span>
+              <div>
+                <p class="font-medium dark:text-gray-100">Conti Bancari</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Collega e sincronizza i tuoi conti</p>
+              </div>
+            </div>
+            <span class="text-gray-400">→</span>
+          </a>
         </div>
-      </button>
-    </div>
-  </div>
+      </div>
 
-  <!-- App Info -->
-  <div class="mt-8 text-center text-sm text-gray-400">
-    <p>SpesaTracker v1.0</p>
-    <p class="mt-1">Made with ❤️ using Astro + Cloudflare</p>
+      <!-- Danger Zone -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-red-50 dark:bg-red-900/20">
+          <h2 class="font-bold text-lg text-red-700 dark:text-red-400">Zona Pericolosa</h2>
+        </div>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+          <button id="deleteAllBtn" class="w-full flex items-center justify-between p-4 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🗑️</span>
+              <div>
+                <p class="font-medium text-red-600 dark:text-red-400">Elimina tutte le spese</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Questa azione non può essere annullata</p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Report Sections + App Info -->
+    <div class="space-y-6">
+      <!-- Report Sections -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+          <h2 class="font-bold text-lg dark:text-gray-100">Sezioni Report</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Scegli quali grafici mostrare nella pagina Report</p>
+        </div>
+        <div class="p-4 space-y-3">
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-sm dark:text-gray-300">Riepilogo (totali)</span>
+            <input type="checkbox" id="toggle-summary" class="report-toggle w-5 h-5 rounded text-blue-600 dark:bg-gray-700" checked>
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-sm dark:text-gray-300">Andamento Mensile</span>
+            <input type="checkbox" id="toggle-monthly" class="report-toggle w-5 h-5 rounded text-blue-600 dark:bg-gray-700" checked>
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-sm dark:text-gray-300">Spese per Categoria</span>
+            <input type="checkbox" id="toggle-categories" class="report-toggle w-5 h-5 rounded text-blue-600 dark:bg-gray-700" checked>
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-sm dark:text-gray-300">Media Giornaliera per Mese</span>
+            <input type="checkbox" id="toggle-dailyavg" class="report-toggle w-5 h-5 rounded text-blue-600 dark:bg-gray-700" checked>
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-sm dark:text-gray-300">Confronto Annuale</span>
+            <input type="checkbox" id="toggle-yearcompare" class="report-toggle w-5 h-5 rounded text-blue-600 dark:bg-gray-700" checked>
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-sm dark:text-gray-300">Top 10 Spese</span>
+            <input type="checkbox" id="toggle-topexpenses" class="report-toggle w-5 h-5 rounded text-blue-600 dark:bg-gray-700" checked>
+          </label>
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-sm dark:text-gray-300">Dettaglio Categorie</span>
+            <input type="checkbox" id="toggle-categorydetails" class="report-toggle w-5 h-5 rounded text-blue-600 dark:bg-gray-700" checked>
+          </label>
+        </div>
+      </div>
+
+      <!-- Theme Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div class="p-4 border-b bg-gray-50 dark:bg-gray-700/50 dark:border-gray-700">
+          <h2 class="font-bold text-lg dark:text-gray-100">Aspetto</h2>
+        </div>
+        <div class="p-4">
+          <label class="flex items-center justify-between cursor-pointer">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl" id="themeIcon">🌙</span>
+              <div>
+                <p class="font-medium dark:text-gray-100">Tema scuro</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Riduce l'affaticamento visivo</p>
+              </div>
+            </div>
+            <div class="relative">
+              <input type="checkbox" id="themeToggle" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
+              <div class="absolute left-[2px] top-[2px] bg-white w-5 h-5 rounded-full transition-transform peer-checked:translate-x-5"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- App Info -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 text-center">
+        <p class="text-lg font-semibold text-gray-800 dark:text-gray-100">SpesaTracker v1.0</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Made with Astro + Cloudflare</p>
+      </div>
+    </div>
+
   </div>
 </AppLayout>
 
 <script>
   import * as XLSX from 'xlsx';
+  import { toggleTheme, isDarkMode } from '../lib/theme';
+
+  // Theme toggle
+  const themeToggle = document.getElementById('themeToggle') as HTMLInputElement;
+  const themeIcon = document.getElementById('themeIcon');
+
+  // Initialize toggle state
+  if (themeToggle) {
+    themeToggle.checked = isDarkMode();
+    if (themeIcon) {
+      themeIcon.textContent = isDarkMode() ? '☀️' : '🌙';
+    }
+
+    themeToggle.addEventListener('change', () => {
+      const isDark = toggleTheme();
+      if (themeIcon) {
+        themeIcon.textContent = isDark ? '☀️' : '🌙';
+      }
+    });
+  }
 
   // Report sections management
   const sectionKeys = ['summary', 'monthly', 'categories', 'dailyavg', 'yearcompare', 'topexpenses', 'categorydetails'];

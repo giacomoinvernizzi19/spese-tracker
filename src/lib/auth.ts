@@ -152,10 +152,50 @@ export function validateEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
+// Top 100 most common passwords to block
+const COMMON_PASSWORDS = new Set([
+  'password', '123456', '123456789', '12345678', '12345', '1234567', 'qwerty',
+  'abc123', 'password1', '111111', '123123', 'admin', 'letmein', 'welcome',
+  'monkey', 'dragon', 'master', 'qwertyuiop', 'login', '1234567890',
+  'princess', 'passw0rd', 'iloveyou', 'sunshine', 'password123', '12345678910',
+  'qwerty123', 'superman', 'michael', 'ashley', 'football', 'baseball',
+  'soccer', 'hockey', 'batman', 'trustno1', 'hunter', 'harley', 'whatever',
+  'jordan', 'thomas', 'robert', 'charlie', 'starwars', 'ranger', 'daniel',
+  'jennifer', 'killer', 'pepper', 'joshua', 'andrew', 'secret', 'andrea',
+  'george', 'nicole', 'spider', 'matrix', 'shadow', 'tigger', 'cookie',
+  'justin', 'access', 'thunder', 'silver', 'maggie', 'mickey', 'bailey',
+  'purple', 'samantha', 'banana', 'amanda', 'buster', 'freedom', 'ginger',
+  'summer', 'qazwsx', 'nothing', 'orange', 'flower', 'martin', 'william',
+  'hello', '000000', 'computer', 'lovely', 'password2', 'password12', 'zaq1zaq1',
+  'maria', 'test', '1q2w3e4r', 'love', 'friends', 'single', '654321', 'internet'
+]);
+
 export function validatePassword(password: string): { valid: boolean; error?: string } {
-  if (password.length < 6) {
-    return { valid: false, error: 'La password deve essere di almeno 6 caratteri' };
+  // Minimum 8 characters
+  if (password.length < 8) {
+    return { valid: false, error: 'La password deve essere di almeno 8 caratteri' };
   }
+
+  // At least one uppercase letter
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, error: 'La password deve contenere almeno una lettera maiuscola' };
+  }
+
+  // At least one lowercase letter
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, error: 'La password deve contenere almeno una lettera minuscola' };
+  }
+
+  // At least one number
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, error: 'La password deve contenere almeno un numero' };
+  }
+
+  // Block common passwords
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+    return { valid: false, error: 'Questa password è troppo comune. Scegline una più sicura' };
+  }
+
   return { valid: true };
 }
 
@@ -178,4 +218,23 @@ export function getResetTokenExpiry(): string {
   const date = new Date();
   date.setHours(date.getHours() + RESET_TOKEN_DURATION_HOURS);
   return date.toISOString();
+}
+
+// Timing-safe string comparison to prevent timing attacks
+export function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    // Compare against itself to maintain constant time even with different lengths
+    const dummy = a;
+    let result = 0;
+    for (let i = 0; i < dummy.length; i++) {
+      result |= dummy.charCodeAt(i) ^ dummy.charCodeAt(i);
+    }
+    return false;
+  }
+
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
 }
