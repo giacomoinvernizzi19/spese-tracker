@@ -1,5 +1,5 @@
-// SpesaTracker Service Worker v2
-const CACHE_NAME = 'spese-tracker-v2';
+// Thinkin' About Money Service Worker v4
+const CACHE_NAME = 'thinkin-about-money-v4';
 
 // Only cache truly static assets (not HTML pages that require auth)
 const STATIC_ASSETS = [
@@ -23,7 +23,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name.startsWith('spese-tracker-') && name !== CACHE_NAME)
+          .filter((name) => (name.startsWith('spese-tracker-') || name.startsWith('thinkin-about-money-')) && name !== CACHE_NAME)
           .map((name) => caches.delete(name))
       );
     })

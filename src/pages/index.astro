@@ -3,10 +3,6 @@ import AppLayout from '../layouts/AppLayout.astro';
 import CategoryPieChart from '../components/charts/CategoryPieChart.svelte';
 import MonthlyBarChart from '../components/charts/MonthlyBarChart.svelte';
 import TransactionList from '../components/transactions/TransactionList.svelte';
-
-const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
-const currentMonth = monthNames[new Date().getMonth()];
-const currentYear = new Date().getFullYear();
 ---
 
 <AppLayout title="Dashboard" activeNav="home">
@@ -20,7 +16,7 @@ const currentYear = new Date().getFullYear();
           <button id="prevMonth" class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
             <span class="text-xl">&#8592;</span>
           </button>
-          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="currentMonthLabel">{currentMonth} {currentYear}</h2>
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="currentMonthLabel">...</h2>
           <button id="nextMonth" class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
             <span class="text-xl">&#8594;</span>
           </button>
@@ -281,5 +277,8 @@ const currentYear = new Date().getFullYear();
     loadMonthTotal();
   });
 
+  // Initial load - set label from client-side date and emit period
+  updateMonthLabel();
   loadMonthTotal();
+  emitPeriodChanged();
 </script>
