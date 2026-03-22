@@ -144,14 +144,14 @@
 {:else if desktopTableView && isDesktop}
   <!-- Desktop Table View -->
   {#if transactions.length === 0}
-    <div class="text-center py-8 text-gray-500">
-      <div class="text-3xl mb-2">📭</div>
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <div class="text-3xl mb-2">&#128237;</div>
       <p>Nessuna spesa registrata</p>
     </div>
   {:else}
     <div class="overflow-x-auto">
       <table class="w-full">
-        <thead class="bg-gray-50 text-left text-sm text-gray-500">
+        <thead class="bg-gray-50 dark:bg-gray-700 text-left text-sm text-gray-500 dark:text-gray-400">
           <tr>
             <th class="px-4 py-3 font-medium">Data</th>
             <th class="px-4 py-3 font-medium">Categoria</th>
@@ -160,19 +160,19 @@
             <th class="px-4 py-3 font-medium w-16"></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-100">
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
           {#each transactions as t (t.id)}
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-4 py-3 text-sm text-gray-600">{formatDateShort(t.date)}</td>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{formatDateShort(t.date)}</td>
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                  <span class="text-lg">{t.category_icon || '📦'}</span>
-                  <span class="text-gray-900">{t.category_name || 'N/A'}</span>
+                  <span class="text-lg">{t.category_icon || '&#128230;'}</span>
+                  <span class="text-gray-900 dark:text-gray-100">{t.category_name || 'N/A'}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-gray-600 max-w-xs truncate">{t.description || '-'}</td>
-              <td class="px-4 py-3 text-right font-semibold {t.type === 'income' ? 'text-green-600' : 'text-red-600'}">
-                {t.type === 'income' ? '+' : '-'}€{t.amount.toFixed(2)}
+              <td class="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-xs truncate">{t.description || '-'}</td>
+              <td class="px-4 py-3 text-right font-semibold {t.type === 'income' ? 'text-green-600' : 'text-red-600 dark:text-red-400'}">
+                {t.type === 'income' ? '+' : '-'}&#8364;{t.amount.toFixed(2)}
               </td>
               <td class="px-4 py-3">
                 <button
@@ -180,7 +180,7 @@
                   class="text-gray-400 hover:text-red-500 transition-colors p-1"
                   title="Elimina"
                 >
-                  🗑️
+                  &#128465;&#65039;
                 </button>
               </td>
             </tr>
@@ -194,8 +194,8 @@
   <div class="space-y-6">
     {#each Object.entries(groupedTransactions).sort((a, b) => b[0].localeCompare(a[0])) as [date, dayTransactions]}
       <div>
-        <h3 class="text-sm font-medium text-gray-500 mb-2 capitalize">{formatDate(date)}</h3>
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 capitalize">{formatDate(date)}</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
           {#each dayTransactions as transaction, i (transaction.id)}
             <div
               class="relative overflow-hidden"
@@ -210,7 +210,7 @@
 
               <!-- Transaction item -->
               <div
-                class="flex items-center gap-3 p-4 bg-white transition-transform {i < dayTransactions.length - 1 ? 'border-b border-gray-100' : ''}"
+                class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 transition-transform {i < dayTransactions.length - 1 ? 'border-b border-gray-100 dark:border-gray-700' : ''}"
                 style="transform: translateX({swipeId === transaction.id ? -swipeOffset : 0}px)"
               >
                 <div
@@ -220,13 +220,13 @@
                   {transaction.category_icon || '📦'}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="font-medium text-gray-900">{transaction.category_name || 'N/A'}</div>
+                  <div class="font-medium text-gray-900 dark:text-gray-100">{transaction.category_name || 'N/A'}</div>
                   {#if transaction.description}
-                    <div class="text-sm text-gray-500 truncate">{transaction.description}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 truncate">{transaction.description}</div>
                   {/if}
                 </div>
                 <div class="text-right">
-                  <div class="font-semibold {transaction.type === 'income' ? 'text-green-600' : 'text-gray-900'}">
+                  <div class="font-semibold {transaction.type === 'income' ? 'text-green-600' : 'text-gray-900 dark:text-gray-100'}">
                     {transaction.type === 'income' ? '+' : '-'}€{transaction.amount.toFixed(2)}
                   </div>
                 </div>

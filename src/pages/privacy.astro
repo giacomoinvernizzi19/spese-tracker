@@ -1,0 +1,152 @@
+---
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#3B82F6" />
+    <title>Privacy Policy - Thinkin' About Money</title>
+  </head>
+  <body class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white py-6">
+      <div class="max-w-3xl mx-auto px-4">
+        <a href="/" class="flex items-center gap-2 text-white hover:text-blue-100 transition-colors mb-4">
+          <span>&larr;</span>
+          <span>Back to App</span>
+        </a>
+        <div class="flex items-center gap-3">
+          <span class="text-4xl">💭💰</span>
+          <div>
+            <h1 class="text-2xl font-bold">Thinkin' About Money</h1>
+            <p class="text-blue-200">Privacy Policy</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-3xl mx-auto px-4 py-8">
+      <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 max-w-none">
+
+        <p class="text-gray-600 text-sm">Last updated: January 17, 2026</p>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">1. Introduction</h2>
+        <p>
+          Thinkin' About Money ("we", "our", "the app") is a personal expense tracking application.
+          We respect your privacy and are committed to protecting your personal data.
+          This privacy policy explains how we collect, use, and safeguard your information.
+        </p>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">2. Data We Collect</h2>
+
+        <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">2.1 Account Information</h3>
+        <ul>
+          <li><strong>Email address</strong> - Used for account creation, login, and password recovery</li>
+          <li><strong>Name</strong> - Used for personalization within the app</li>
+          <li><strong>Password</strong> - Stored securely using bcrypt hashing (we never store plain text passwords)</li>
+        </ul>
+
+        <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">2.2 Financial Data</h3>
+        <ul>
+          <li><strong>Transactions</strong> - Amount, date, description, and category of expenses/income you enter</li>
+          <li><strong>Categories</strong> - Custom categories you create for organizing transactions</li>
+          <li><strong>Budgets</strong> - Budget limits you set for categories</li>
+        </ul>
+
+        <h3 class="text-lg font-semibold text-gray-800 mt-6 mb-3">2.3 Bank Connection Data (Optional)</h3>
+        <p>If you choose to connect your bank account via Nordigen/GoCardless:</p>
+        <ul>
+          <li><strong>Bank account identifiers</strong> - Encrypted using AES-256-GCM</li>
+          <li><strong>Transaction data from your bank</strong> - Imported and stored like manual transactions</li>
+        </ul>
+        <p>
+          <strong>Important:</strong> We never store your bank login credentials. Bank connection is handled
+          securely through Nordigen/GoCardless, a regulated Open Banking provider.
+        </p>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">3. How We Use Your Data</h2>
+        <ul>
+          <li>To provide the expense tracking service</li>
+          <li>To display statistics and reports about your spending</li>
+          <li>To send password reset emails (only when you request it)</li>
+          <li>To improve the app's functionality</li>
+        </ul>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">4. Data Storage & Security</h2>
+        <ul>
+          <li><strong>Location:</strong> Data is stored on Cloudflare's global edge network (D1 database)</li>
+          <li><strong>Encryption:</strong> All connections use HTTPS. Sensitive bank data is encrypted at rest using AES-256-GCM</li>
+          <li><strong>Access:</strong> Only you can access your data through your authenticated account</li>
+        </ul>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">5. Data Sharing</h2>
+        <p>We do NOT sell, trade, or share your personal data with third parties, except:</p>
+        <ul>
+          <li><strong>Nordigen/GoCardless</strong> - If you use bank sync, only to facilitate the connection</li>
+          <li><strong>Resend</strong> - Email service provider for password reset emails only</li>
+          <li><strong>Legal requirements</strong> - If required by law</li>
+        </ul>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">6. Your Rights</h2>
+        <p>You have the right to:</p>
+        <ul>
+          <li><strong>Access</strong> - View all your data within the app</li>
+          <li><strong>Export</strong> - Download your transactions as Excel file</li>
+          <li><strong>Delete</strong> - Delete all your transactions via Settings</li>
+          <li><strong>Account deletion</strong> - Contact us to request complete account deletion</li>
+        </ul>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">7. Cookies & Local Storage</h2>
+        <ul>
+          <li><strong>Session cookie</strong> - Used to keep you logged in (httpOnly, secure)</li>
+          <li><strong>Local storage</strong> - Used for theme preference and report section visibility</li>
+        </ul>
+        <p>We do not use tracking cookies or analytics.</p>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">8. Children's Privacy</h2>
+        <p>
+          This app is not intended for children under 13. We do not knowingly collect data from children.
+        </p>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">9. Changes to This Policy</h2>
+        <p>
+          We may update this privacy policy from time to time. The "Last updated" date at the top
+          indicates when the policy was last revised.
+        </p>
+
+        <h2 class="text-xl font-bold text-gray-900 mt-8 mb-4">10. Contact</h2>
+        <p>
+          If you have questions about this privacy policy or your data, please contact:
+        </p>
+        <p>
+          <strong>Email:</strong> giacomo.invernizzi19@gmail.com
+        </p>
+
+        <hr class="my-8" />
+
+        <div class="text-center text-gray-500 text-sm">
+          <p>Thinkin' About Money</p>
+          <p>Track your money, think about tomorrow</p>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 text-gray-500 text-sm">
+      <p>&copy; 2026 Thinkin' About Money. All rights reserved.</p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  p { color: #374151; margin-bottom: 1rem; }
+  ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+  ul > li { color: #374151; margin-bottom: 0.5rem; }
+  strong { font-weight: 600; }
+</style>

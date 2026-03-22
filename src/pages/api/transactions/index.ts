@@ -20,6 +20,9 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
   const url = new URL(request.url);
   const month = url.searchParams.get('month');
   const year = url.searchParams.get('year');
+  const from = url.searchParams.get('from');
+  const to = url.searchParams.get('to');
+  const search = url.searchParams.get('search');
   const limit = url.searchParams.get('limit') || '100';
 
   let query = `
@@ -41,9 +44,17 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
 
   const params: any[] = [user.id];
 
-  if (month && year) {
+  if (from && to) {
+    query += ` AND t.date >= ? AND t.date <= ?`;
+    params.push(from, to);
+  } else if (month && year) {
     query += ` AND strftime('%m', t.date) = ? AND strftime('%Y', t.date) = ?`;
     params.push(month.padStart(2, '0'), year);
+  }
+
+  if (search) {
+    query += ` AND LOWER(t.description) LIKE '%' || LOWER(?) || '%'`;
+    params.push(search);
   }
 
   query += ` ORDER BY t.date DESC, t.created_at DESC LIMIT ?`;

@@ -311,24 +311,27 @@ import AppLayout from '../layouts/AppLayout.astro';
     }
 
     if (hasCategoryData) {
+      // Group small categories into "Altro"
+      const { chartCategories, altroItems } = groupSmallCategories(data.categories);
+
       categoryChart = new Chart(document.getElementById('categoryChart') as HTMLCanvasElement, {
         type: 'doughnut',
         data: {
-          labels: data.categories.map((c: any) => `${c.icon} ${c.name}`),
+          labels: chartCategories.map((c: any) => `${c.icon} ${c.name}`),
           datasets: [{
-            data: data.categories.map((c: any) => c.amount),
-            backgroundColor: data.categories.map((c: any) => c.color || '#6B7280')
+            data: chartCategories.map((c: any) => c.amount),
+            backgroundColor: chartCategories.map((c: any) => c.color || '#6B7280')
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } } // Use custom legend below
+          plugins: { legend: { display: false } }
         }
       });
 
-      // Render custom clickable legend
-      renderCategoryLegend(data.categories);
+      // Render custom clickable legend with Altro support
+      renderCategoryLegend(chartCategories, altroItems);
     } else {
       categoryLegend.innerHTML = '';
     }
@@ -442,34 +445,87 @@ import AppLayout from '../layouts/AppLayout.astro';
     }
   }
 
+  // Group small categories (< 3% of total) into "Altro"
+  const ALTRO_THRESHOLD = 0.03; // 3%
+  function groupSmallCategories(categories: any[]) {
+    const total = categories.reduce((sum: number, c: any) => sum + c.amount, 0);
+    if (total === 0) return { chartCategories: categories, altroItems: [] };
+
+    const big: any[] = [];
+    const small: any[] = [];
+    for (const c of categories) {
+      if (c.amount / total >= ALTRO_THRESHOLD) {
+        big.push(c);
+      } else {
+        small.push(c);
+      }
+    }
+
+    // Only group if there are 2+ small categories
+    if (small.length < 2) return { chartCategories: categories, altroItems: [] };
+
+    const altroTotal = small.reduce((sum: number, c: any) => sum + c.amount, 0);
+    const altro = { id: -1, name: 'Altro', icon: '📦', color: '#9CA3AF', amount: altroTotal, hasChildren: 0, isAltro: true };
+    return { chartCategories: [...big, altro], altroItems: small };
+  }
+
   // Render clickable category legend
-  function renderCategoryLegend(categories: any[]) {
-    const totalAmount = categories.reduce((sum, c) => sum + c.amount, 0);
-    categoryLegend.innerHTML = categories
-      .sort((a, b) => b.amount - a.amount)
+  let altroExpanded = false;
+  function renderCategoryLegend(categories: any[], altroItems: any[] = []) {
+    altroExpanded = false;
+    const sorted = [...categories].sort((a, b) => b.amount - a.amount);
+    categoryLegend.innerHTML = sorted
       .map(c => {
         const hasChildren = c.hasChildren > 0 && !categoryParentId;
+        const isAltro = c.isAltro;
         return `
           <button
             data-category-id="${c.id}"
             data-category-name="${c.name}"
             data-category-icon="${c.icon}"
             data-has-children="${c.hasChildren || 0}"
-            class="w-full flex items-center justify-between text-sm py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100 ${hasChildren ? 'cursor-pointer' : 'cursor-default'}"
+            ${isAltro ? 'data-is-altro="1"' : ''}
+            class="w-full flex items-center justify-between text-sm py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100 ${hasChildren || isAltro ? 'cursor-pointer' : 'cursor-default'}"
           >
             <div class="flex items-center gap-2">
               <div class="w-3 h-3 rounded-full" style="background-color: ${c.color || '#6B7280'}"></div>
               <span>${c.icon} ${c.name}</span>
-              ${hasChildren ? '<span class="text-gray-400 text-xs">›</span>' : ''}
+              ${hasChildren || isAltro ? '<span class="text-gray-400 text-xs altro-arrow">›</span>' : ''}
             </div>
             <span class="font-medium">€${c.amount.toFixed(2)}</span>
           </button>
+          ${isAltro ? '<div id="altroDetail" class="hidden pl-6 space-y-1"></div>' : ''}
         `;
       }).join('');
+
+    // Populate altro detail if present
+    const altroDetail = document.getElementById('altroDetail');
+    if (altroDetail && altroItems.length > 0) {
+      altroDetail.innerHTML = altroItems
+        .sort((a, b) => b.amount - a.amount)
+        .map(c => `
+          <div class="flex items-center justify-between text-sm py-0.5 px-2 text-gray-700 dark:text-gray-300">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full" style="background-color: ${c.color || '#6B7280'}"></div>
+              <span>${c.icon} ${c.name}</span>
+            </div>
+            <span class="font-medium text-xs">€${c.amount.toFixed(2)}</span>
+          </div>
+        `).join('');
+    }
 
     // Add click handlers
     categoryLegend.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
+        const isAltro = btn.getAttribute('data-is-altro') === '1';
+        if (isAltro) {
+          altroExpanded = !altroExpanded;
+          const detail = document.getElementById('altroDetail');
+          const arrow = btn.querySelector('.altro-arrow');
+          if (detail) detail.classList.toggle('hidden', !altroExpanded);
+          if (arrow) arrow.textContent = altroExpanded ? '⌄' : '›';
+          return;
+        }
         const hasChildren = parseInt(btn.getAttribute('data-has-children') || '0');
         if (hasChildren > 0 && !categoryParentId) {
           categoryParentId = parseInt(btn.getAttribute('data-category-id') || '0');
@@ -508,13 +564,15 @@ import AppLayout from '../layouts/AppLayout.astro';
     }
 
     if (hasCategoryData) {
+      const { chartCategories, altroItems } = groupSmallCategories(data.categories);
+
       categoryChart = new Chart(document.getElementById('categoryChart') as HTMLCanvasElement, {
         type: 'doughnut',
         data: {
-          labels: data.categories.map((c: any) => `${c.icon} ${c.name}`),
+          labels: chartCategories.map((c: any) => `${c.icon} ${c.name}`),
           datasets: [{
-            data: data.categories.map((c: any) => c.amount),
-            backgroundColor: data.categories.map((c: any) => c.color || '#6B7280')
+            data: chartCategories.map((c: any) => c.amount),
+            backgroundColor: chartCategories.map((c: any) => c.color || '#6B7280')
           }]
         },
         options: {
@@ -523,7 +581,7 @@ import AppLayout from '../layouts/AppLayout.astro';
           plugins: { legend: { display: false } }
         }
       });
-      renderCategoryLegend(data.categories);
+      renderCategoryLegend(chartCategories, altroItems);
     } else {
       categoryLegend.innerHTML = '';
     }

@@ -11,12 +11,25 @@
   let chart: Chart | null = null;
   let loading = true;
 
+  // Period state
+  let periodFrom: string | null = null;
+  let periodTo: string | null = null;
+  let periodMonth: number | null = null;
+  let periodYear: number | null = null;
+
   // Fetch data from API
   async function fetchData() {
     loading = true;
     try {
-      const now = new Date();
-      const res = await fetch(`/api/stats?month=${now.getMonth() + 1}&year=${now.getFullYear()}`);
+      let url: string;
+      if (periodFrom && periodTo) {
+        url = `/api/stats?from=${periodFrom}&to=${periodTo}`;
+      } else {
+        const m = periodMonth ?? (new Date().getMonth() + 1);
+        const y = periodYear ?? new Date().getFullYear();
+        url = `/api/stats?month=${m}&year=${y}`;
+      }
+      const res = await fetch(url);
       const stats = await res.json();
 
       data = stats.monthlyTrend || [];
@@ -87,16 +100,33 @@
     fetchData();
   }
 
+  function handlePeriodChange(e: Event) {
+    const detail = (e as CustomEvent).detail;
+    if (detail) {
+      periodFrom = detail.from || null;
+      periodTo = detail.to || null;
+      if (detail.month && detail.year && !detail.from) {
+        periodMonth = detail.month;
+        periodYear = detail.year;
+        periodFrom = null;
+        periodTo = null;
+      }
+    }
+    fetchData();
+  }
+
   onMount(() => {
     initChart();
     fetchData();
 
     window.addEventListener('refreshStats', handleRefresh);
     window.addEventListener('transactionDeleted', handleRefresh);
+    window.addEventListener('periodChanged', handlePeriodChange);
 
     return () => {
       window.removeEventListener('refreshStats', handleRefresh);
       window.removeEventListener('transactionDeleted', handleRefresh);
+      window.removeEventListener('periodChanged', handlePeriodChange);
     };
   });
 
@@ -105,8 +135,8 @@
   });
 </script>
 
-<div class="bg-white rounded-xl p-4 shadow-sm">
-  <h3 class="font-semibold text-gray-900 mb-4">{title}</h3>
+<div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+  <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>
 
   {#if loading}
     <div class="h-48 flex items-center justify-center">

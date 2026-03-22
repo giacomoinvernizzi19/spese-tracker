@@ -172,7 +172,31 @@ import AppLayout from '../layouts/AppLayout.astro';
       return;
     }
 
-    container.innerHTML = connections.map(conn => {
+    // Build expiry alerts
+    let alertsHtml = '';
+    for (const conn of connections) {
+      if (!conn.expires_at) continue;
+      const now = Date.now();
+      const expires = new Date(conn.expires_at).getTime();
+      const daysLeft = Math.floor((expires - now) / 86400000);
+      const name = conn.institution_name || conn.institution_id;
+
+      if (daysLeft < 0) {
+        alertsHtml += `<div class="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm mb-3">
+          <strong>${name}</strong> - Connessione scaduta. <a href="#" class="underline font-medium" onclick="document.getElementById('addBankBtn').click(); return false;">Ricollega</a>
+        </div>`;
+      } else if (daysLeft < 3) {
+        alertsHtml += `<div class="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm mb-3">
+          <strong>${name}</strong> - Scade tra <strong>${daysLeft}</strong> ${daysLeft === 1 ? 'giorno' : 'giorni'}. Rinnova al piu' presto!
+        </div>`;
+      } else if (daysLeft < 14) {
+        alertsHtml += `<div class="p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-sm mb-3">
+          <strong>${name}</strong> - Scade tra <strong>${daysLeft}</strong> giorni. Pianifica il rinnovo.
+        </div>`;
+      }
+    }
+
+    container.innerHTML = alertsHtml + connections.map(conn => {
       const statusBadge = {
         'linked': '<span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Collegato</span>',
         'pending': '<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">In attesa</span>',

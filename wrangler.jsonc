@@ -1,6 +1,6 @@
 {
 	"main": "dist/_worker.js/index.js",
-	"name": "spese-tracker",
+	"name": "thinkin-about-money",
 	"compatibility_date": "2026-01-04",
 	"compatibility_flags": [
 		"nodejs_compat",
@@ -14,7 +14,7 @@
 		"enabled": true
 	},
 	"vars": {
-		"APP_URL": "https://spese-tracker.g-invernizzi-jm.workers.dev"
+		"APP_URL": "https://thinkin-about-money.g-invernizzi-jm.workers.dev"
 	},
 	"d1_databases": [
 		{
@@ -22,7 +22,10 @@
 			"database_name": "spese-tracker-db",
 			"database_id": "cb795d69-0853-4c77-98c3-a294bcbbe5a4"
 		}
-	]
+	],
+	"triggers": {
+		"crons": ["0 6 * * *"]
+	}
 	// Secrets (configure via wrangler secret put):
 	// - NORDIGEN_SECRET_ID: Nordigen/GoCardless API ID
 	// - NORDIGEN_SECRET_KEY: Nordigen/GoCardless API key

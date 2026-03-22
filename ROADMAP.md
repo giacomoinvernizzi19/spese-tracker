@@ -1,99 +1,57 @@
-# SpesaTracker - Roadmap Sviluppi Futuri
+# Thinkin' About Money - Development Roadmap
 
-Questo file raccoglie tutte le idee e funzionalità da implementare in futuro.
+## Current Status (Completed)
 
----
-
-## v1.5 - Miglioramenti Core
-
-### Autenticazione
-- [ ] Recupero password via email
-- [ ] Verifica email alla registrazione
-- [ ] "Ricordami" per sessioni più lunghe
-- [ ] Login con Google/Apple (OAuth)
-
-### Budget & Controllo
-- [ ] Budget mensile per categoria
-- [ ] Alert quando si supera il budget
-- [ ] Budget annuale complessivo
-- [ ] Obiettivi di risparmio
-
-### Filtri & Ricerca
-- [ ] Filtro per range di date personalizzato
-- [ ] Ricerca testuale nelle descrizioni
-- [ ] Filtro per importo (min/max)
-- [ ] Tag personalizzati sulle spese
-
-### Export & Backup
-- [ ] Export automatico periodico (settimanale/mensile)
-- [ ] Export in PDF con grafici
-- [ ] Backup su Google Drive/Dropbox
+| Feature | Status |
+|---------|--------|
+| MVP (auth + CRUD transactions) | Done |
+| Charts & Statistics | Done |
+| Import Excel | Done |
+| Budget per category | Done |
+| Bank Sync (Nordigen) | Done |
+| Security Hardening | Done |
+| PWA base | Done |
+| Rebranding | Done |
 
 ---
 
-## v2.0 - Integrazione Bancaria
+## v1.5 - Data Import & Feature Completion (March 2026)
 
-### Nordigen/GoCardless Bank Sync
-- [x] Collegamento conto bancario
-- [x] Import movimenti (sync manuale)
-- [x] Categorizzazione automatica basata su storico
-- [ ] **Sync automatico giornaliero** (Cloudflare Cron Triggers) - priorità alta
-- [ ] **Deduplicazione Excel vs Bank** - match per data+importo+descrizione - priorità alta
-- [ ] Riconciliazione spese manuali vs bancarie
-- [x] Supporto multi-conto
-- [ ] Notifica quando collegamento sta per scadere (90 giorni)
-
-### Multi-Utente Avanzato
-- [ ] Condivisione budget familiare
-- [ ] Spese condivise tra utenti
-- [ ] Ruoli (admin, membro famiglia, ospite)
-- [ ] Inviti via email
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Historical data import | Done | ~1918 transactions from Excel via D1 API |
+| Text search | Done | Server-side LIKE filter on descriptions |
+| Custom date range | Done | From/to date params + dashboard presets (month/3mo/year/custom) |
+| Recurring transactions | Done | Monthly/weekly/yearly auto-generation with management UI |
+| Cron auto-sync | Done | Daily at 06:00 UTC - recurring generation + session cleanup |
+| Dark mode complete | Done | All pages and components with dark: classes |
+| Bank connection expiry alert | Done | Yellow/red banners based on days until expiry |
+| Charts sync with period selector | Done | CategoryPieChart + MonthlyBarChart react to periodChanged event |
+| Pie chart "Altro" grouping | Done | Categories < 3% grouped into expandable "Altro" (dashboard + report) |
+| Privacy page Tailwind 4 fix | Done | Replaced @apply with inline classes (TW4 scoped style limitation) |
 
 ---
 
-## v3.0 - Intelligenza Artificiale
+## v2.0 - Future Ideas (No Timeline)
 
-### Analisi AI
-- [ ] Categorizzazione automatica con AI
-- [ ] Previsione spese fine mese
-- [ ] Suggerimenti per risparmiare
-- [ ] Rilevamento anomalie (spese insolite)
-- [ ] Report mensile generato da AI
-- [ ] Chat assistant per query sui dati ("quanto ho speso in ristoranti a dicembre?")
+These are ideas to consider if/when needed. No commitment.
 
-### Machine Learning
-- [ ] Pattern di spesa ricorrenti
-- [ ] Clustering automatico spese simili
-- [ ] Previsione budget ottimale per categoria
+| Feature | Description |
+|---------|-------------|
+| PNG icons for PWA | 192x192, 512x512 for iOS/Android |
+| Export PDF with charts | Visual report export |
+| Excel vs Bank deduplication | Match by date+amount+description |
+| Push notifications | Budget alerts via web push |
 
 ---
 
-## Miglioramenti UX/UI
+## Notes
 
-- [ ] Dark mode
-- [ ] Temi colore personalizzabili
-- [ ] Widget per home screen (iOS/Android)
-- [ ] Notifiche push per promemoria
-- [ ] Shortcut Siri/Google Assistant
-- [ ] Modalità offline completa (PWA)
-- [ ] Gesture personalizzate (swipe per azioni rapide)
+- Nordigen rate limit: 10 requests/day per scope per account
+- OAuth expires after 90 days - UI shows expiry + alert banners
+- Cron secret needed: `wrangler secret put CRON_SECRET`
+- D1 does not enforce CHECK constraints added after table creation
 
 ---
 
-## Infrastruttura & Admin
-
-- [ ] Pannello admin per gestire utenti
-- [ ] Metriche utilizzo app
-- [ ] Rate limiting API
-- [ ] Logs e audit trail
-- [ ] Multi-tenant per aziende
-- [ ] API pubblica con documentazione
-
----
-
-## Note
-
-Questo file viene aggiornato man mano che emergono nuove idee.
-Priorità e tempistiche da definire in base alle esigenze.
-
-*Ultimo aggiornamento: Gennaio 2026*
+*Last updated: March 2026*

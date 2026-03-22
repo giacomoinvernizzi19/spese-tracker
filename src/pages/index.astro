@@ -10,18 +10,36 @@ const currentYear = new Date().getFullYear();
 ---
 
 <AppLayout title="Dashboard" activeNav="home">
-  <!-- Header Row: Month Selector + Total Card - side by side su desktop -->
+  <!-- Header Row: Period Selector + Total Card - side by side su desktop -->
   <div class="flex flex-col lg:flex-row gap-6 mb-6">
-    <!-- Month Selector -->
+    <!-- Period Selector -->
     <div class="lg:w-1/3">
-      <div class="bg-white rounded-xl p-4 shadow-sm h-full flex items-center justify-between">
-        <button id="prevMonth" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-          <span class="text-xl">←</span>
-        </button>
-        <h2 class="text-lg font-semibold text-gray-800" id="currentMonthLabel">{currentMonth} {currentYear}</h2>
-        <button id="nextMonth" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-          <span class="text-xl">→</span>
-        </button>
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm h-full">
+        <!-- Month navigation (default mode) -->
+        <div id="monthNav" class="flex items-center justify-between">
+          <button id="prevMonth" class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <span class="text-xl">&#8592;</span>
+          </button>
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100" id="currentMonthLabel">{currentMonth} {currentYear}</h2>
+          <button id="nextMonth" class="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <span class="text-xl">&#8594;</span>
+          </button>
+        </div>
+        <!-- Custom range (hidden by default) -->
+        <div id="customRange" class="hidden space-y-2">
+          <div class="flex items-center gap-2">
+            <input type="date" id="dateFrom" class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+            <span class="text-gray-400 text-sm">-</span>
+            <input type="date" id="dateTo" class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+          </div>
+        </div>
+        <!-- Period preset buttons -->
+        <div class="flex flex-wrap gap-1.5 mt-3">
+          <button data-period="month" class="period-btn px-2.5 py-1 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium">Questo mese</button>
+          <button data-period="3months" class="period-btn px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">3 mesi</button>
+          <button data-period="year" class="period-btn px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">Anno</button>
+          <button data-period="custom" class="period-btn px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">Custom</button>
+        </div>
       </div>
     </div>
 
@@ -30,7 +48,7 @@ const currentYear = new Date().getFullYear();
       <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg h-full">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <div class="text-sm opacity-80 mb-1">Speso questo mese</div>
+            <div class="text-sm opacity-80 mb-1" id="periodLabel">Speso questo mese</div>
             <div class="text-4xl font-bold" id="monthTotal">
               <span class="animate-pulse">...</span>
             </div>
@@ -54,10 +72,10 @@ const currentYear = new Date().getFullYear();
   </div>
 
   <!-- Recent Transactions -->
-  <div class="bg-white rounded-xl shadow-sm p-4 lg:p-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 lg:p-6">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-semibold text-gray-900">Ultime spese</h3>
-      <a href="/transazioni" class="text-blue-600 text-sm hover:underline">Vedi tutte →</a>
+      <h3 class="font-semibold text-gray-900 dark:text-gray-100">Ultime spese</h3>
+      <a href="/transazioni" class="text-blue-600 dark:text-blue-400 text-sm hover:underline">Vedi tutte &#8594;</a>
     </div>
     <TransactionList client:load apiUrl="/api/transactions?limit=5" desktopTableView={true} />
   </div>
@@ -68,19 +86,77 @@ const currentYear = new Date().getFullYear();
 
   let currentMonth = new Date().getMonth();
   let currentYear = new Date().getFullYear();
+  let activePeriod = 'month'; // 'month', '3months', 'year', 'custom'
+
+  function getStatsUrl(): string {
+    if (activePeriod === 'month') {
+      return `/api/stats?month=${currentMonth + 1}&year=${currentYear}`;
+    }
+    const now = new Date();
+    let from: string, to: string;
+    if (activePeriod === '3months') {
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - 2);
+      d.setDate(1);
+      from = d.toISOString().split('T')[0];
+      to = now.toISOString().split('T')[0];
+    } else if (activePeriod === 'year') {
+      from = `${now.getFullYear()}-01-01`;
+      to = now.toISOString().split('T')[0];
+    } else {
+      from = (document.getElementById('dateFrom') as HTMLInputElement).value;
+      to = (document.getElementById('dateTo') as HTMLInputElement).value;
+      if (!from || !to) return `/api/stats?month=${currentMonth + 1}&year=${currentYear}`;
+    }
+    return `/api/stats?from=${from}&to=${to}`;
+  }
+
+  function getTransactionsUrl(): string {
+    if (activePeriod === 'month') {
+      return `/api/transactions?month=${currentMonth + 1}&year=${currentYear}&limit=5`;
+    }
+    const now = new Date();
+    let from: string, to: string;
+    if (activePeriod === '3months') {
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - 2);
+      d.setDate(1);
+      from = d.toISOString().split('T')[0];
+      to = now.toISOString().split('T')[0];
+    } else if (activePeriod === 'year') {
+      from = `${now.getFullYear()}-01-01`;
+      to = now.toISOString().split('T')[0];
+    } else {
+      from = (document.getElementById('dateFrom') as HTMLInputElement).value;
+      to = (document.getElementById('dateTo') as HTMLInputElement).value;
+      if (!from || !to) return `/api/transactions?limit=5`;
+    }
+    return `/api/transactions?from=${from}&to=${to}&limit=5`;
+  }
 
   async function loadMonthTotal() {
     try {
-      const res = await fetch(`/api/stats?month=${currentMonth + 1}&year=${currentYear}`);
+      const res = await fetch(getStatsUrl());
       const stats = await res.json();
       const monthTotal = stats.totalMonth || 0;
-      document.getElementById('monthTotal')!.textContent = `€ ${monthTotal.toFixed(2)}`;
+      document.getElementById('monthTotal')!.textContent = `\u20AC ${monthTotal.toFixed(2)}`;
 
-      // Load and update budget progress
+      // Update period label
+      const labels: Record<string, string> = {
+        'month': 'Speso questo mese',
+        '3months': 'Speso ultimi 3 mesi',
+        'year': `Speso nel ${new Date().getFullYear()}`,
+        'custom': 'Speso nel periodo'
+      };
+      document.getElementById('periodLabel')!.textContent = labels[activePeriod] || 'Speso';
+
+      // Update recent transactions
+      window.dispatchEvent(new CustomEvent('updateTransactionList', { detail: { url: getTransactionsUrl() } }));
+
       await loadBudgetProgress(monthTotal);
     } catch (error) {
       console.error('Error loading stats:', error);
-      document.getElementById('monthTotal')!.textContent = '€ 0.00';
+      document.getElementById('monthTotal')!.textContent = '\u20AC 0.00';
     }
   }
 
@@ -88,8 +164,6 @@ const currentYear = new Date().getFullYear();
     try {
       const res = await fetch('/api/budgets');
       const budgets = await res.json();
-
-      // Calculate total budget
       const totalBudget = budgets.reduce((sum: number, b: any) => sum + b.amount, 0);
 
       if (totalBudget > 0) {
@@ -97,12 +171,11 @@ const currentYear = new Date().getFullYear();
         document.getElementById('budgetProgress')!.style.width = `${percentage}%`;
         document.getElementById('budgetPercent')!.textContent = `${percentage}%`;
 
-        // Change color if over budget
         const progressBar = document.getElementById('budgetProgress')!;
         if (spent > totalBudget) {
           progressBar.classList.remove('bg-white');
           progressBar.classList.add('bg-red-400');
-          document.getElementById('budgetPercent')!.textContent = `${percentage}% ⚠️`;
+          document.getElementById('budgetPercent')!.textContent = `${percentage}% \u26A0\uFE0F`;
         } else {
           progressBar.classList.remove('bg-red-400');
           progressBar.classList.add('bg-white');
@@ -119,7 +192,69 @@ const currentYear = new Date().getFullYear();
     document.getElementById('currentMonthLabel')!.textContent = `${monthNames[currentMonth]} ${currentYear}`;
   }
 
+  function emitPeriodChanged() {
+    const now = new Date();
+    let detail: any;
+    if (activePeriod === 'month') {
+      detail = { month: currentMonth + 1, year: currentYear };
+    } else if (activePeriod === '3months') {
+      const d = new Date(now); d.setMonth(d.getMonth() - 2); d.setDate(1);
+      detail = { from: d.toISOString().split('T')[0], to: now.toISOString().split('T')[0] };
+    } else if (activePeriod === 'year') {
+      detail = { from: `${now.getFullYear()}-01-01`, to: now.toISOString().split('T')[0] };
+    } else {
+      const from = (document.getElementById('dateFrom') as HTMLInputElement).value;
+      const to = (document.getElementById('dateTo') as HTMLInputElement).value;
+      if (from && to) detail = { from, to };
+      else detail = { month: currentMonth + 1, year: currentYear };
+    }
+    window.dispatchEvent(new CustomEvent('periodChanged', { detail }));
+  }
+
+  function setPeriod(period: string) {
+    activePeriod = period;
+    // Update button styles
+    document.querySelectorAll('.period-btn').forEach(btn => {
+      const p = (btn as HTMLElement).dataset.period;
+      if (p === period) {
+        btn.className = 'period-btn px-2.5 py-1 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 font-medium';
+      } else {
+        btn.className = 'period-btn px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+      }
+    });
+
+    // Toggle month nav vs custom range
+    const monthNav = document.getElementById('monthNav')!;
+    const customRange = document.getElementById('customRange')!;
+    if (period === 'custom') {
+      monthNav.classList.add('hidden');
+      customRange.classList.remove('hidden');
+    } else {
+      monthNav.classList.remove('hidden');
+      customRange.classList.add('hidden');
+    }
+
+    loadMonthTotal();
+    emitPeriodChanged();
+  }
+
+  // Period buttons
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setPeriod((btn as HTMLElement).dataset.period!);
+    });
+  });
+
+  // Custom date inputs
+  document.getElementById('dateFrom')?.addEventListener('change', () => {
+    if (activePeriod === 'custom') loadMonthTotal();
+  });
+  document.getElementById('dateTo')?.addEventListener('change', () => {
+    if (activePeriod === 'custom') loadMonthTotal();
+  });
+
   document.getElementById('prevMonth')?.addEventListener('click', () => {
+    if (activePeriod !== 'month') setPeriod('month');
     currentMonth--;
     if (currentMonth < 0) {
       currentMonth = 11;
@@ -127,9 +262,11 @@ const currentYear = new Date().getFullYear();
     }
     updateMonthLabel();
     loadMonthTotal();
+    emitPeriodChanged();
   });
 
   document.getElementById('nextMonth')?.addEventListener('click', () => {
+    if (activePeriod !== 'month') setPeriod('month');
     currentMonth++;
     if (currentMonth > 11) {
       currentMonth = 0;
@@ -137,13 +274,12 @@ const currentYear = new Date().getFullYear();
     }
     updateMonthLabel();
     loadMonthTotal();
+    emitPeriodChanged();
   });
 
-  // Listen for transaction deletions
   window.addEventListener('transactionDeleted', () => {
     loadMonthTotal();
   });
 
-  // Initial load
   loadMonthTotal();
 </script>

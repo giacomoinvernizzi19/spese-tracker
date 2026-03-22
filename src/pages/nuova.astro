@@ -7,43 +7,43 @@ import AppLayout from '../layouts/AppLayout.astro';
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
     <!-- Left Column: Amount + Keypad + Description -->
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
       <!-- Header (mobile only, desktop has page title) -->
-      <div class="flex items-center justify-between p-4 border-b lg:hidden">
-        <h2 class="text-xl font-bold">Nuova Spesa</h2>
-        <a href="/" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</a>
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 lg:hidden">
+        <h2 class="text-xl font-bold dark:text-gray-100">Nuova Spesa</h2>
+        <a href="/" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl leading-none">&times;</a>
       </div>
 
       <div class="p-4 lg:p-6">
         <!-- Amount Display -->
         <div class="text-center mb-6">
-          <div id="amountDisplay" class="text-4xl lg:text-5xl font-bold text-gray-900 mb-2">€ 0.00</div>
+          <div id="amountDisplay" class="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-2">&#8364; 0.00</div>
           <input
             type="date"
             id="dateInput"
-            class="text-sm text-gray-500 bg-transparent border border-gray-200 rounded px-2 py-1 text-center"
+            class="text-sm text-gray-500 dark:text-gray-400 bg-transparent border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-center dark:text-gray-100"
           />
         </div>
 
         <!-- Keypad -->
         <div class="grid grid-cols-4 gap-2 lg:gap-3 mb-6">
-          <button data-key="7" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">7</button>
-          <button data-key="8" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">8</button>
-          <button data-key="9" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">9</button>
-          <button data-key="C" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-red-100 text-red-600 hover:bg-red-200 transition-colors">C</button>
+          <button data-key="7" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">7</button>
+          <button data-key="8" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">8</button>
+          <button data-key="9" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">9</button>
+          <button data-key="C" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors">C</button>
 
-          <button data-key="4" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">4</button>
-          <button data-key="5" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">5</button>
-          <button data-key="6" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">6</button>
-          <button data-key="←" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-200 text-gray-900 hover:bg-gray-300 transition-colors">←</button>
+          <button data-key="4" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">4</button>
+          <button data-key="5" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">5</button>
+          <button data-key="6" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">6</button>
+          <button data-key="&#8592;" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">&#8592;</button>
 
-          <button data-key="1" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">1</button>
-          <button data-key="2" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">2</button>
-          <button data-key="3" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">3</button>
-          <button data-key="." class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">.</button>
+          <button data-key="1" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">1</button>
+          <button data-key="2" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">2</button>
+          <button data-key="3" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">3</button>
+          <button data-key="." class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">.</button>
 
-          <button data-key="0" class="keypad-btn col-span-2 h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">0</button>
-          <button data-key="00" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors">00</button>
+          <button data-key="0" class="keypad-btn col-span-2 h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">0</button>
+          <button data-key="00" class="keypad-btn h-12 lg:h-14 rounded-lg text-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">00</button>
           <div></div>
         </div>
 
@@ -53,15 +53,15 @@ import AppLayout from '../layouts/AppLayout.astro';
             type="text"
             id="descriptionInput"
             placeholder="Note (opzionale)"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
         </div>
 
-        <!-- Submit Button (visible anche su mobile in questa posizione) -->
+        <!-- Submit Button -->
         <button
           id="submitBtn"
           disabled
-          class="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          class="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
         >
           Salva Spesa
         </button>
@@ -69,8 +69,8 @@ import AppLayout from '../layouts/AppLayout.astro';
     </div>
 
     <!-- Right Column: Categories (mobile: below, desktop: side-by-side) -->
-    <div class="bg-white rounded-xl shadow-sm p-4 lg:p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Categoria</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 lg:p-6">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Categoria</h3>
       <div id="categoriesGrid" class="grid grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3">
         <div class="col-span-4 lg:col-span-3 xl:col-span-4 text-center text-gray-400 py-4">Caricamento...</div>
       </div>
