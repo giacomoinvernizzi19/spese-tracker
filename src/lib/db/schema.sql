@@ -1,4 +1,4 @@
--- SpesaTracker Database Schema v2.0 (Multi-User)
+-- Thinkin' About Money Database Schema v2.0 (Multi-User)
 -- Pulisce e ricrea tutte le tabelle con supporto multi-utente
 
 -- Drop existing tables

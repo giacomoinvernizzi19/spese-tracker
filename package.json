@@ -1,14 +1,21 @@
 {
-  "name": "spese-tracker",
+  "name": "thinkin-about-money",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
     "deploy": "dotenv -o -- npx wrangler deploy",
-    "wrangler": "dotenv -o -- npx wrangler"
+    "wrangler": "dotenv -o -- npx wrangler",
+    "cap:init": "npx cap init \"Thinkin' About Money\" com.thinkinaboutmoney.app --web-dir dist",
+    "cap:add:ios": "npx cap add ios",
+    "cap:add:android": "npx cap add android",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "cap:open:android": "npx cap open android",
+    "cap:build": "npm run build && npx cap sync"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",

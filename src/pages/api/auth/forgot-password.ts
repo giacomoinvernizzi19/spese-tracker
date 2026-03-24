@@ -69,9 +69,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       const resend = new Resend(resendApiKey);
 
       await resend.emails.send({
-        from: 'SpesaTracker <onboarding@resend.dev>',
+        from: "Thinkin' About Money <onboarding@resend.dev>",
         to: user.email,
-        subject: 'Recupera la tua password - SpesaTracker',
+        subject: "Recupera la tua password - Thinkin' About Money",
         html: `
           <!DOCTYPE html>
           <html>
@@ -81,13 +81,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
           </head>
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
-              <div style="font-size: 48px;">💰</div>
-              <h1 style="color: #2563eb; margin: 10px 0;">SpesaTracker</h1>
+              <div style="font-size: 48px;">💭💰</div>
+              <h1 style="color: #2563eb; margin: 10px 0;">Thinkin' About Money</h1>
             </div>
 
             <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
               <h2 style="margin-top: 0; color: #1e293b;">Ciao ${user.name},</h2>
-              <p>Hai richiesto di recuperare la password del tuo account SpesaTracker.</p>
+              <p>Hai richiesto di recuperare la password del tuo account Thinkin' About Money.</p>
               <p>Clicca il pulsante qui sotto per impostare una nuova password:</p>
 
               <div style="text-align: center; margin: 30px 0;">
