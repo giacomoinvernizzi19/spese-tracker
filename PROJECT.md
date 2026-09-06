@@ -1,5 +1,32 @@
 # Thinkin' About Money - Project Context
 
+## Quick Context — verifica del 6 settembre 2026
+
+- **What:** gestione spese personali, import Excel e integrazione bancaria.
+- **Stack:** Astro + Svelte + Cloudflare Workers/D1, confermato per il consolidamento.
+- **Status:** piano di consolidamento P1/P2/P3 preparato; implementazione non iniziata. Le marcature storiche "Done" sotto non certificano l'operatività attuale di budget, ricorrenze o bank sync.
+- **Piano corrente:** [Consolidamento P1/P2/P3](docs/plans/2026-09-06-remediation.md). Fineco e Revolut in P1, soltanto EUR; accesso GoCardless confermato dall'utente.
+- **Rilevato:** schema remoto budget incompatibile con le API; vincolo `source` incompatibile con le ricorrenze; configurazione bancaria/cifratura/email da recuperare; cron senza collegamento `scheduled()` nel sorgente esaminato; typecheck non verde.
+- **Git/deploy:** `main` verificato a `a9778f6`; ultima versione pubblicata rilevata `81db52de` del 14 maggio 2026. Quattro modifiche locali preesistenti nel checkout originale sono da riconciliare separatamente, non incluse nella PR del piano.
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `docs/plans/2026-09-06-remediation.md` | Piano corrente, dipendenze, criteri di chiusura e workflow GitHub |
+| `src/lib/db/schema.sql`, `migrations/` | Schema storico e migrazioni da riconciliare; schema.sql contiene DROP, non usarlo per aggiornare produzione |
+| `src/lib/nordigen.ts`, `src/pages/api/bank/` | Client GoCardless e flusso bancario |
+| `src/lib/recurring.ts`, `src/pages/api/cron/daily.ts` | Generazione ricorrenze e manutenzione |
+| `wrangler.jsonc`, `package.json` | Runtime, deploy e comandi |
+
+## Scripts
+
+- `npm run dev`: sviluppo locale.
+- `npm run build`: build applicazione.
+- `./node_modules/.bin/tsc --noEmit --incremental false`: controllo tipi, fallisce nella baseline verificata; il piano prevede di ripristinarlo.
+- `npm run deploy`: pubblicazione, da eseguire solo dopo verifica e approvazione del rilascio.
+- Nessuna suite di test rilevata nella baseline; aggiunta prevista nel piano. Browser test tramite Playwright MCP configurato per il workspace.
+
 ## Accounts
 | Platform | Account | ID |
 |---|---|---|
@@ -79,6 +106,7 @@ Personal expense tracking app with bank sync, developed for personal use.
 
 | Data | Decisione | Alternative | Perche |
 |------|-----------|-------------|--------|
+| 2026-09-06 | Consolidamento incrementale mantenendo lo stack; Fineco/Revolut in P1, solo EUR | Riscrittura o nuove funzionalità | Prima garantire integrità e ripristinare le funzioni esistenti; priorità e valuta confermate dall'utente |
 | 2026-01 | Astro 5 + Svelte 5 | Next.js, React | Performance, islands architecture |
 | 2026-01 | Cloudflare D1 | Supabase, PlanetScale | Zero latency, edge computing |
 | 2026-01 | Custom auth (bcrypt + cookies) | Auth0, Clerk | Control totale, zero vendor lock |
@@ -101,6 +129,10 @@ Personal expense tracking app with bank sync, developed for personal use.
 - No push notifications yet
 
 ### Gotchas
+
+- La review del 2026-09-06 ha verificato che `CREATE TABLE IF NOT EXISTS` non risolve il drift della tabella budget esistente: servono migrazioni esplicite e prova sullo schema reale.
+- Uno stato bancario `linked` con scadenza trascorsa non prova una connessione operativa; un trigger cron configurato non prova l'esistenza del relativo handler.
+- Le migrazioni risultano anche eseguite tramite SQL diretto: controllare lo schema effettivo, oltre al registro migrazioni.
 - Multi-account Cloudflare: use project-specific .env
 - Nordigen rate limit 10 req/day - manual sync recommended
 - OAuth expires 90 days - show expiry in UI
@@ -160,9 +192,10 @@ cd C:/ClaudeCode/.claude/skills/playwright-skill && node run.js "C:/tmp/playwrig
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | PROJECT.md, ROADMAP.md, docs/plans/2026-09-06-remediation.md | PASS | Review continuous-improvement e link locali/diff verificati; sola pianificazione, nessun codice o dato remoto modificato |
 | 2026-01-17 | manifest.json, package.json, wrangler.jsonc, sw.js, login.astro, registrati.astro, reset-password.astro, recupera-password.astro, AppLayout.astro, impostazioni.astro, forgot-password.ts, CLAUDE.md, PROJECT.md, ROADMAP.md, privacy.astro, capacitor.config.ts | WARN | Rebranding complete. Minor: schema.sql comment still says SpesaTracker |
 | 2026-03-22 | 20+ files (stats API, dashboard, charts, dark mode, recurring, cron, report, privacy, import script) | OK | v1.5 overhaul: search, date range, recurring, cron, dark mode, bank alerts, 1912 txn import, charts period sync, pie chart "Altro" grouping |
 
 ---
 
-**Last updated:** 2026-03-22
+**Last updated:** 2026-09-06 (piano; nessuna implementazione o modifica remota)
