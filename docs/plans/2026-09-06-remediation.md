@@ -1,6 +1,6 @@
 # Piano di consolidamento P1 / P2 / P3
 
-Data: 6 settembre 2026. Stato: pianificazione; nessun fix applicato da questa PR.
+Data: 6 settembre 2026. Stato: esecuzione avviata; primo blocco P1 verificato localmente, produzione invariata.
 
 ## Obiettivo e decisioni confermate
 
@@ -10,7 +10,7 @@ Rendere affidabili le funzioni esistenti di Thinkin' About Money, mantenendo Ast
 - L'utente conferma di avere ancora accesso al portale GoCardless Bank Account Data.
 - Per ora si gestiscono **solo euro**. Movimenti in altre valute devono essere esclusi con esito visibile; nessuna conversione implicita.
 - GitHub deve seguire il lavoro tramite commit, PR e documentazione aggiornati.
-- Questa PR contiene solo il piano. Implementazione, migrazioni remote e deploy sono fasi successive; per il rilascio in produzione si presenta il risultato verificato e si acquisisce l'approvazione.
+- La PR iniziale #1 contiene solo il piano; il branch di implementazione prepara i fix. Migrazioni remote e deploy restano fasi successive; per il rilascio in produzione si presenta il risultato verificato e si acquisisce l'approvazione.
 
 ## Baseline verificata
 
@@ -32,6 +32,8 @@ Precedenti da conservare: `5fda96f` e `8980d48` per auth/cifratura/rate limit; `
 ## P1 — dati affidabili e banche nuovamente operative
 
 ### PR 1 — baseline, schema riproducibile e migrazioni sicure
+
+**Avanzamento:** migrazioni, recupero UI password, API budget e test preparati. Prove locali SQLite/D1/build/Playwright passate. Ripristino backup provato in isolamento; tracking e migrazione remota ancora da eseguire dopo approvazione.
 
 **Scopo:** portare database e codice allo stesso contratto senza perdere dati.
 

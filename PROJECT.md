@@ -4,7 +4,7 @@
 
 - **What:** gestione spese personali, import Excel e integrazione bancaria.
 - **Stack:** Astro + Svelte + Cloudflare Workers/D1, confermato per il consolidamento.
-- **Status:** piano di consolidamento P1/P2/P3 preparato; implementazione non iniziata. Le marcature storiche "Done" sotto non certificano l'operatività attuale di budget, ricorrenze o bank sync.
+- **Status:** P1 in esecuzione; baseline e migrazione preparate e verificate localmente, nessuna migrazione remota o pubblicazione applicativa. Le marcature storiche "Done" sotto non certificano l'operatività attuale di budget, ricorrenze o bank sync.
 - **Piano corrente:** [Consolidamento P1/P2/P3](docs/plans/2026-09-06-remediation.md). Fineco e Revolut in P1, soltanto EUR; accesso GoCardless confermato dall'utente.
 - **Trade Republic:** interesse aggiuntivo dell'utente; Open Banking documentato, ma assente dai selettori pubblici GoCardless IT/DE verificati il 6 settembre 2026. Verifica del catalogo autenticato inserita nel piano; supporto non confermato, nessuna connessione effettuata.
 - **Rilevato:** schema remoto budget incompatibile con le API; vincolo `source` incompatibile con le ricorrenze; configurazione bancaria/cifratura/email da recuperare; cron senza collegamento `scheduled()` nel sorgente esaminato; typecheck non verde.
@@ -14,8 +14,11 @@
 
 | File | Purpose |
 |------|---------|
+| `docs/database-upgrade.md` | Procedura di upgrade, preservazione e tracking migrazioni |
+| `migrations/0001_initial.sql`, `migrations/0008_ledger_integrity.sql` | Baseline ordinata e migrazione ledger/budget |
+| `scripts/test.mjs`, `scripts/test-d1.mjs`, `tests/` | Test con Node/esbuild e runtime D1 locale |
 | `docs/plans/2026-09-06-remediation.md` | Piano corrente, dipendenze, criteri di chiusura e workflow GitHub |
-| `src/lib/db/schema.sql`, `migrations/` | Schema storico e migrazioni da riconciliare; schema.sql contiene DROP, non usarlo per aggiornare produzione |
+| `src/lib/db/schema.sql`, `migrations/` | Migrazioni come fonte di schema; schema.sql è un rimando, non una procedura di reset |
 | `src/lib/nordigen.ts`, `src/pages/api/bank/` | Client GoCardless e flusso bancario |
 | `src/lib/recurring.ts`, `src/pages/api/cron/daily.ts` | Generazione ricorrenze e manutenzione |
 | `wrangler.jsonc`, `package.json` | Runtime, deploy e comandi |
@@ -26,7 +29,7 @@
 - `npm run build`: build applicazione.
 - `./node_modules/.bin/tsc --noEmit --incremental false`: controllo tipi, fallisce nella baseline verificata; il piano prevede di ripristinarlo.
 - `npm run deploy`: pubblicazione, da eseguire solo dopo verifica e approvazione del rilascio.
-- Nessuna suite di test rilevata nella baseline; aggiunta prevista nel piano. Browser test tramite Playwright MCP configurato per il workspace.
+- `npm test`: test automatici schema e API budget; `node scripts/test-d1.mjs`: vincoli e rollback nel runtime D1. Test di baseline introdotti il 6 settembre 2026. Browser test tramite Playwright MCP configurato per il workspace.
 
 ## Accounts
 | Platform | Account | ID |
@@ -107,6 +110,7 @@ Personal expense tracking app with bank sync, developed for personal use.
 
 | Data | Decisione | Alternative | Perche |
 |------|-----------|-------------|--------|
+| 2026-09-06 | Migrazioni ordinate come fonte schema; budget datati preservati e separati dai limiti ricorrenti; test con strumenti già installati | Reset schema o appiattimento budget | Conservare dati e significato, rendere riproducibile upgrade e nuovo database |
 | 2026-09-06 | Consolidamento incrementale mantenendo lo stack; Fineco/Revolut in P1, solo EUR | Riscrittura o nuove funzionalità | Prima garantire integrità e ripristinare le funzioni esistenti; priorità e valuta confermate dall'utente |
 | 2026-01 | Astro 5 + Svelte 5 | Next.js, React | Performance, islands architecture |
 | 2026-01 | Cloudflare D1 | Supabase, PlanetScale | Zero latency, edge computing |
@@ -130,6 +134,9 @@ Personal expense tracking app with bank sync, developed for personal use.
 - No push notifications yet
 
 ### Gotchas
+
+- Nel rebuild SQLite va preservato anche sqlite_sequence: altrimenti possono essere riutilizzati ID cancellati già emessi. Test dedicato per budget e transazioni.
+- Il 6 settembre 2026 il database remoto contiene zero budget; il nuovo schema preserva comunque le assegnazioni storiche mensili e le API danno loro precedenza sui limiti ricorrenti.
 
 - La review del 2026-09-06 ha verificato che `CREATE TABLE IF NOT EXISTS` non risolve il drift della tabella budget esistente: servono migrazioni esplicite e prova sullo schema reale.
 - Uno stato bancario `linked` con scadenza trascorsa non prova una connessione operativa; un trigger cron configurato non prova l'esistenza del relativo handler.
@@ -193,6 +200,7 @@ cd C:/ClaudeCode/.claude/skills/playwright-skill && node run.js "C:/tmp/playwrig
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | Migrazioni baseline/ledger, API budget, auth UI, test e runbook | PASS | Code review PASS; CI documentale allineata; 4 test, D1, build, restore backup e Playwright locali PASS. Produzione invariata |
 | 2026-09-06 | PROJECT.md, docs/plans/2026-09-06-remediation.md | PASS | Nota fattibilità Trade Republic: fonti ufficiali e selettori GoCardless IT/DE verificati, review continuous-improvement; supporto autenticato non ancora confermato |
 | 2026-09-06 | PROJECT.md, ROADMAP.md, docs/plans/2026-09-06-remediation.md | PASS | Review continuous-improvement e link locali/diff verificati; sola pianificazione, nessun codice o dato remoto modificato |
 | 2026-01-17 | manifest.json, package.json, wrangler.jsonc, sw.js, login.astro, registrati.astro, reset-password.astro, recupera-password.astro, AppLayout.astro, impostazioni.astro, forgot-password.ts, CLAUDE.md, PROJECT.md, ROADMAP.md, privacy.astro, capacitor.config.ts | WARN | Rebranding complete. Minor: schema.sql comment still says SpesaTracker |
@@ -200,4 +208,13 @@ cd C:/ClaudeCode/.claude/skills/playwright-skill && node run.js "C:/tmp/playwrig
 
 ---
 
-**Last updated:** 2026-09-06 (piano; nessuna implementazione o modifica remota)
+**Last updated:** 2026-09-06 (P1 baseline verificata localmente; produzione invariata)
+
+## Evidenze P1 baseline — 6 settembre 2026
+
+- Backup privato esportato fuori dalla repo; ripristino SQLite isolato e applicazione 0008: conteggi/totali per utente e fonte invariati, integrity_check e foreign_key_check validi.
+- SHA256 backup: `15bd860d976f906802cc00a947f53ae139aa464a357928cf225eb0f286ba0fc6`. Il contenuto non è incluso in Git.
+- Test automatici 4/4; runtime D1: migrazioni, unicità e rollback batch PASS; build PASS; Playwright locale: registrazione 201, minlength 8 e quattro requisiti password aggiornati.
+- Recuperate le due pagine password del checkout originale; del lockfile recuperati soltanto nome/versione. Checkout originale preservato.
+- Wrangler locale installato usa runtime con compatibilità massima 2025-11-18 e segnala fallback rispetto a 2026-01-04; riallineamento tooling da verificare prima del deploy.
+- Il tracking migrazioni remoto resta da riconciliare prima di qualsiasi apply; nessuna migrazione o deploy remoto effettuati.

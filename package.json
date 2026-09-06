@@ -15,7 +15,9 @@
     "cap:sync": "npm run build && npx cap sync",
     "cap:open:ios": "npx cap open ios",
     "cap:open:android": "npx cap open android",
-    "cap:build": "npm run build && npx cap sync"
+    "cap:build": "npm run build && npx cap sync",
+    "test": "node scripts/test.mjs",
+    "db:local": "wrangler d1 migrations apply spese-tracker-db --local"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",

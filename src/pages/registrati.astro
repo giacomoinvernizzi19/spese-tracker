@@ -56,10 +56,17 @@ import '../styles/global.css';
               id="password"
               name="password"
               required
-              minlength="6"
+              minlength="8"
+              autocomplete="new-password"
               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder="Minimo 6 caratteri"
+              placeholder="Almeno 8 caratteri"
             />
+            <ul id="pwdRules" class="mt-2 text-xs space-y-1 text-gray-600 dark:text-gray-400">
+              <li data-rule="length" class="flex items-center gap-1.5"><span class="rule-icon">○</span> Almeno 8 caratteri</li>
+              <li data-rule="upper" class="flex items-center gap-1.5"><span class="rule-icon">○</span> Una lettera maiuscola</li>
+              <li data-rule="lower" class="flex items-center gap-1.5"><span class="rule-icon">○</span> Una lettera minuscola</li>
+              <li data-rule="number" class="flex items-center gap-1.5"><span class="rule-icon">○</span> Un numero</li>
+            </ul>
           </div>
 
           <div>
@@ -69,7 +76,8 @@ import '../styles/global.css';
               id="confirmPassword"
               name="confirmPassword"
               required
-              minlength="6"
+              minlength="8"
+              autocomplete="new-password"
               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Ripeti la password"
             />
@@ -101,6 +109,27 @@ import '../styles/global.css';
   const form = document.getElementById('registerForm') as HTMLFormElement;
   const errorMessage = document.getElementById('errorMessage')!;
   const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+  const passwordInput = document.getElementById('password') as HTMLInputElement;
+  const pwdRules = document.getElementById('pwdRules')!;
+
+  const ruleTests: Record<string, (v: string) => boolean> = {
+    length: v => v.length >= 8,
+    upper: v => /[A-Z]/.test(v),
+    lower: v => /[a-z]/.test(v),
+    number: v => /[0-9]/.test(v),
+  };
+
+  passwordInput.addEventListener('input', () => {
+    const v = passwordInput.value;
+    pwdRules.querySelectorAll<HTMLLIElement>('li[data-rule]').forEach(li => {
+      const rule = li.dataset.rule!;
+      const ok = ruleTests[rule](v);
+      li.classList.toggle('text-green-600', ok);
+      li.classList.toggle('dark:text-green-400', ok);
+      const icon = li.querySelector('.rule-icon')!;
+      icon.textContent = ok ? '✓' : '○';
+    });
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

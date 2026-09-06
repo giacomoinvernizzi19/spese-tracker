@@ -18,6 +18,7 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
 
   const url = new URL(request.url);
   const period = url.searchParams.get('period') || 'monthly';
+  if (!['monthly', 'yearly'].includes(period)) return new Response(JSON.stringify({ error: 'Periodo non valido' }), { status: 400 });
 
   try {
     // Get current month/year for spending calculation
@@ -50,9 +51,17 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
         ) as spent
       FROM budgets b
       JOIN categories c ON b.category_id = c.id
-      WHERE b.user_id = ?
+      WHERE b.user_id = ? AND b.period = ?
+        AND (
+          (b.year = ? AND b.month = ?)
+          OR (b.year IS NULL AND b.month IS NULL AND NOT EXISTS (
+            SELECT 1 FROM budgets dated WHERE dated.user_id = b.user_id
+              AND dated.category_id IS b.category_id AND dated.period = b.period
+              AND dated.year = ? AND dated.month = ?
+          ))
+        )
       ORDER BY c.name ASC
-    `).bind(currentMonth, currentYear.toString(), currentYear.toString(), user.id).all();
+    `).bind(currentMonth, currentYear.toString(), currentYear.toString(), user.id, period, currentYear, currentMonth, currentYear, currentMonth).all();
 
     const result = budgets.results.map((b: any) => ({
       ...b,
@@ -106,7 +115,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     // Check if budget already exists for this category/period
     const existing = await db.prepare(`
       SELECT id FROM budgets
-      WHERE user_id = ? AND category_id = ? AND period = ?
+      WHERE user_id = ? AND category_id = ? AND period = ? AND year IS NULL AND month IS NULL
     `).bind(user.id, category_id, period).first();
 
     if (existing) {
