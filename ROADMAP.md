@@ -1,5 +1,17 @@
 # Thinkin' About Money - Development Roadmap
 
+## Priorità correnti — 6 settembre 2026
+
+La roadmap operativa è il [piano di consolidamento P1/P2/P3](docs/plans/2026-09-06-remediation.md). Le sezioni successive conservano lo storico delle funzionalità; "Done" non implica che l'operatività attuale sia stata verificata.
+
+| Priorità | Obiettivo | Stato |
+|----------|-----------|-------|
+| P1 | Schema coerente, salvataggi sicuri, import/ricorrenze affidabili e ripristino Fineco/Revolut solo EUR | Pianificato |
+| P2 | Cron effettivo, servizi condivisi, typecheck/test/CI e rilascio ripetibile | Pianificato, dipende da P1 |
+| P3 | Componenti UI, rimozione residui e documentazione coerente | Pianificato, dopo le garanzie P1/P2 |
+
+Il piano non introduce nuove funzionalità native, multivaluta o un cambio di provider. Nessun fix è stato applicato con la PR di pianificazione.
+
 ## Current Status (Completed)
 
 | Feature | Status |
@@ -54,4 +66,4 @@ These are ideas to consider if/when needed. No commitment.
 
 ---
 
-*Last updated: March 2026*
+*Last updated: 6 settembre 2026 — piano di consolidamento; storico precedente conservato.*
