@@ -194,6 +194,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | Servizio banche, candidati, cifratura, migrazione 0009 | PASS | 16 test, D1, build; finding review corretti e CI PASS. Credenziali/consenso live mancanti |
 | 2026-09-06 | API, import, ricorrenze, auth e template HTML | PASS | Code review e continuous-improvement PASS; 11 test, build e smoke import locali PASS |
 | 2026-09-06 | Migrazioni baseline/ledger, API budget, auth UI, test e runbook | PASS | Code review PASS; CI documentale allineata; 4 test, D1, build, restore backup e Playwright locali PASS. Produzione invariata |
 | 2026-09-06 | PROJECT.md, docs/plans/2026-09-06-remediation.md | PASS | Nota fattibilità Trade Republic: fonti ufficiali e selettori GoCardless IT/DE verificati, review continuous-improvement; supporto autenticato non ancora confermato |
@@ -222,3 +223,11 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - Ripristino password atomico e monouso, sessioni invalidate; cron senza secret rifiutato; Resend mancante non emette token né URL nei log. Email reale non testata.
 - Controllo tipi ancora bloccato dagli errori preesistenti nel client bancario/cifratura e Capacitor: risoluzione prevista nel blocco banche/tooling.
 - Recupero configurazione: vecchio Worker `spese-tracker` contiene i nomi NORDIGEN_SECRET_ID, NORDIGEN_SECRET_KEY e RESEND_API_KEY; Worker attuale soltanto CRON_SECRET. Nessuna ENCRYPTION_KEY nei due. Cloudflare non restituisce i valori dei secret. Utente segnala possibile perdita delle credenziali e disponibilità a ricrearle. Nessuna rotazione effettuata.
+
+## Evidenze P1 banche — 6 settembre 2026
+
+- Migrazione 0009 aggiunge stati per conto, lease/backoff, copertura temporale continua e candidati separati dal ledger. Nuovo servizio `src/lib/bank.ts`, client provider con timeout/errori senza payload, cifratura versionata e callback verificato.
+- `BankReview.svelte` espone import/associazione/ignora. Tutti i nuovi movimenti richiedono review, decisione intenzionale per evitare sovrapposizioni con Excel/manuale. Le identità mancanti non entrano automaticamente nei totali.
+- Test 16/16 PASS, D1 migrazioni/rollback PASS, build PASS; Playwright rende candidato sintetico e nessun overflow desktop. Review: finding checkpoint disgiunto e backoff discovery corretti con regressioni; continuous-improvement PASS.
+- La chiave precedente non è necessaria per i record verificati nel backup: sei requisition UUID in chiaro, due liste account JSON in chiaro, quattro liste assenti. Nessuna chiave creata o ruotata da questa sessione.
+- `docs/bank-recovery.md` e `scripts/configure-local-banking.py`: percorso per configurazione privata. Nuove credenziali, catalogo autenticato, consenso Fineco/Revolut e prova live restano in attesa dell'utente. P1 banche non chiusa operativamente.

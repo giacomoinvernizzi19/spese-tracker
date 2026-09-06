@@ -19,6 +19,9 @@ export interface Requisition {
   status: string;
   link: string;
   accounts: string[];
+  reference: string;
+  institution_id: string;
+  agreement: string;
 }
 
 export interface AccountDetails {
@@ -58,178 +61,48 @@ export interface TransactionsResponse {
   };
 }
 
+export interface Agreement { accepted: string; access_valid_for_days: number; max_historical_days: number; institution_id: string; }
+export class ProviderError extends Error {
+  constructor(public status: number,public retryAfter: string|null=null) { super('Bank provider request failed'); this.name='ProviderError'; }
+}
 export class NordigenClient {
-  private accessToken: string | null = null;
-  private tokenExpiry: Date | null = null;
+  private accessToken: string|null=null;
+  private expiresAt=0;
   private baseUrl: string;
-
-  constructor(private config: NordigenConfig) {
-    this.baseUrl = config.baseUrl || 'https://bankaccountdata.gocardless.com/api/v2';
+  constructor(private config: NordigenConfig) { this.baseUrl=config.baseUrl ?? 'https://bankaccountdata.gocardless.com/api/v2'; }
+  private async request<T>(path:string,init:RequestInit={},authenticated=true):Promise<T> {
+    const headers=new Headers(init.headers);
+    headers.set('Content-Type','application/json');
+    if(authenticated) headers.set('Authorization',`Bearer ${await this.getToken()}`);
+    let response:Response;
+    try { response=await fetch(this.baseUrl+path,{...init,headers,signal:AbortSignal.timeout(20000)}); }
+    catch { throw new ProviderError(503); }
+    if(!response.ok) throw new ProviderError(response.status,response.headers.get('Retry-After'));
+    if(response.status===204) return undefined as T;
+    try { return await response.json() as T; } catch { throw new ProviderError(502); }
   }
-
-  // Get or refresh access token
-  async getToken(): Promise<string> {
-    if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
-      return this.accessToken;
-    }
-
-    const res = await fetch(`${this.baseUrl}/token/new/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        secret_id: this.config.secretId,
-        secret_key: this.config.secretKey
-      })
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`Nordigen token error: ${res.status} - ${error}`);
-    }
-
-    const data = await res.json();
-    this.accessToken = data.access;
-    // Set expiry 60 seconds before actual expiry for safety margin
-    this.tokenExpiry = new Date(Date.now() + (data.access_expires - 60) * 1000);
-    return this.accessToken;
+  async getToken():Promise<string> {
+    if(this.accessToken && Date.now()<this.expiresAt) return this.accessToken;
+    let data=await this.request<{access?:string;access_expires?:number;refresh?:string}>('/token/new/',{method:'POST',body:JSON.stringify({secret_id:this.config.secretId,secret_key:this.config.secretKey})},false);
+    if(!data.access && data.refresh) data=await this.request('/token/refresh/',{method:'POST',body:JSON.stringify({refresh:data.refresh})},false);
+    if(typeof data.access!=='string' || !data.access || typeof data.access_expires!=='number' || data.access_expires<=0) throw new ProviderError(502);
+    this.accessToken=data.access;this.expiresAt=Date.now()+Math.max(0,data.access_expires-60)*1000;
+    return data.access;
   }
-
-  // List institutions for a country (default: Italy)
-  async getInstitutions(country: string = 'IT'): Promise<Institution[]> {
-    const token = await this.getToken();
-    const res = await fetch(`${this.baseUrl}/institutions/?country=${country}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`Nordigen institutions error: ${res.status} - ${error}`);
-    }
-
-    return res.json();
-  }
-
-  // Create a requisition (OAuth link for bank authorization)
-  async createRequisition(
-    institutionId: string,
-    redirectUri: string,
-    reference: string
-  ): Promise<Requisition> {
-    const token = await this.getToken();
-    const res = await fetch(`${this.baseUrl}/requisitions/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        redirect: redirectUri,
-        institution_id: institutionId,
-        reference,
-        user_language: 'IT'
-      })
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`Nordigen requisition error: ${res.status} - ${error}`);
-    }
-
-    return res.json();
-  }
-
-  // Get requisition status and account IDs
-  async getRequisition(requisitionId: string): Promise<Requisition> {
-    const token = await this.getToken();
-    const res = await fetch(`${this.baseUrl}/requisitions/${requisitionId}/`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`Nordigen requisition fetch error: ${res.status} - ${error}`);
-    }
-
-    return res.json();
-  }
-
-  // Delete a requisition (disconnect bank)
-  async deleteRequisition(requisitionId: string): Promise<void> {
-    const token = await this.getToken();
-    const res = await fetch(`${this.baseUrl}/requisitions/${requisitionId}/`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!res.ok && res.status !== 404) {
-      const error = await res.text();
-      throw new Error(`Nordigen requisition delete error: ${res.status} - ${error}`);
-    }
-  }
-
-  // Get account details
-  async getAccountDetails(accountId: string): Promise<{ account: AccountDetails }> {
-    const token = await this.getToken();
-    const res = await fetch(`${this.baseUrl}/accounts/${accountId}/details/`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`Nordigen account details error: ${res.status} - ${error}`);
-    }
-
-    return res.json();
-  }
-
-  // Get account balances
-  async getAccountBalances(accountId: string): Promise<{ balances: Balance[] }> {
-    const token = await this.getToken();
-    const res = await fetch(`${this.baseUrl}/accounts/${accountId}/balances/`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`Nordigen balances error: ${res.status} - ${error}`);
-    }
-
-    return res.json();
-  }
-
-  // Get account transactions
-  async getTransactions(
-    accountId: string,
-    dateFrom?: string,
-    dateTo?: string
-  ): Promise<TransactionsResponse> {
-    const token = await this.getToken();
-    let url = `${this.baseUrl}/accounts/${accountId}/transactions/`;
-    const params = new URLSearchParams();
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo) params.set('date_to', dateTo);
-    if (params.toString()) url += `?${params}`;
-
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(`Nordigen transactions error: ${res.status} - ${error}`);
-    }
-
-    return res.json();
+  getInstitutions(country='IT') { return this.request<Institution[]>(`/institutions/?country=${encodeURIComponent(country)}`); }
+  createRequisition(institutionId:string,redirect:string,reference:string) { return this.request<Requisition>('/requisitions/',{method:'POST',body:JSON.stringify({institution_id:institutionId,redirect,reference,user_language:'IT'})}); }
+  getRequisition(id:string) { return this.request<Requisition>(`/requisitions/${encodeURIComponent(id)}/`); }
+  getAgreement(id:string) { return this.request<Agreement>(`/agreements/enduser/${encodeURIComponent(id)}/`); }
+  async deleteRequisition(id:string) { try { await this.request(`/requisitions/${encodeURIComponent(id)}/`,{method:'DELETE'}); } catch(error) { if(!(error instanceof ProviderError && error.status===404)) throw error; } }
+  getAccountDetails(id:string) { return this.request<{account:AccountDetails}>(`/accounts/${encodeURIComponent(id)}/details/`); }
+  getAccountBalances(id:string) { return this.request<{balances:Balance[]}>(`/accounts/${encodeURIComponent(id)}/balances/`); }
+  getTransactions(id:string,dateFrom?:string,dateTo?:string) {
+    const params=new URLSearchParams();if(dateFrom)params.set('date_from',dateFrom);if(dateTo)params.set('date_to',dateTo);
+    return this.request<TransactionsResponse>(`/accounts/${encodeURIComponent(id)}/transactions/?${params}`);
   }
 }
-
-// Helper to create client from environment
-export function createNordigenClient(env: {
-  NORDIGEN_SECRET_ID: string;
-  NORDIGEN_SECRET_KEY: string;
-}): NordigenClient {
-  return new NordigenClient({
-    secretId: env.NORDIGEN_SECRET_ID,
-    secretKey: env.NORDIGEN_SECRET_KEY
-  });
+import { InputError } from './validation';
+export function createNordigenClient(env:{NORDIGEN_SECRET_ID?:string;NORDIGEN_SECRET_KEY?:string}):NordigenClient {
+  if(!env.NORDIGEN_SECRET_ID || !env.NORDIGEN_SECRET_KEY) throw new InputError('Collegamento bancario non configurato',503);
+  return new NordigenClient({secretId:env.NORDIGEN_SECRET_ID,secretKey:env.NORDIGEN_SECRET_KEY});
 }

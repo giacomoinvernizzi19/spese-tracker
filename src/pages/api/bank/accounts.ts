@@ -1,143 +1,20 @@
-import type { APIRoute } from 'astro';
-import { getAuthUser } from '../../../lib/auth';
-import { createNordigenClient } from '../../../lib/nordigen';
+import { authenticated,body,json } from '../../../lib/api';
+import { bankConfig,type BankConnection } from '../../../lib/bank';
 import { safeDecrypt } from '../../../lib/encryption';
-
-export const prerender = false;
-
-// GET - Lista account bancari collegati
-export const GET: APIRoute = async ({ cookies, locals }) => {
-  const runtime = locals.runtime;
-  const db = runtime.env.DB;
-  const encryptionKey = runtime.env.ENCRYPTION_KEY as string;
-
-  // Auth check
-  const user = await getAuthUser(cookies, db);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Non autenticato' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  // Encryption is required
-  if (!encryptionKey) {
-    console.error('ENCRYPTION_KEY not configured');
-    return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  try {
-    const result = await db.prepare(`
-      SELECT id, institution_id, institution_name, status, account_ids, last_sync_at, expires_at, created_at
-      FROM bank_connections
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-    `).bind(user.id).all();
-
-    // Decrypt account_ids for each connection
-    const connections = await Promise.all(result.results.map(async (conn: any) => {
-      let accountIds: string[] = [];
-      if (conn.account_ids) {
-        const decrypted = await safeDecrypt(conn.account_ids, encryptionKey);
-        accountIds = JSON.parse(decrypted);
-      }
-      return {
-        ...conn,
-        account_ids: accountIds
-      };
-    }));
-
-    return new Response(JSON.stringify(connections), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    console.error('Bank accounts error:', error);
-    return new Response(JSON.stringify({ error: 'Database error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-};
-
-// DELETE - Scollega un account bancario
-export const DELETE: APIRoute = async ({ request, cookies, locals }) => {
-  const runtime = locals.runtime;
-  const db = runtime.env.DB;
-  const encryptionKey = runtime.env.ENCRYPTION_KEY as string;
-
-  // Auth check
-  const user = await getAuthUser(cookies, db);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Non autenticato' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  // Encryption is required
-  if (!encryptionKey) {
-    console.error('ENCRYPTION_KEY not configured');
-    return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  try {
-    const body = await request.json();
-    const { connection_id } = body;
-
-    if (!connection_id) {
-      return new Response(JSON.stringify({ error: 'connection_id richiesto' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Verify ownership
-    const connection = await db.prepare(`
-      SELECT requisition_id FROM bank_connections
-      WHERE id = ? AND user_id = ?
-    `).bind(connection_id, user.id).first();
-
-    if (!connection) {
-      return new Response(JSON.stringify({ error: 'Connessione non trovata' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Decrypt requisition_id
-    const requisitionId = await safeDecrypt(connection.requisition_id as string, encryptionKey);
-
-    // Delete requisition from Nordigen (optional, best-effort)
-    try {
-      const client = createNordigenClient({
-        NORDIGEN_SECRET_ID: runtime.env.NORDIGEN_SECRET_ID,
-        NORDIGEN_SECRET_KEY: runtime.env.NORDIGEN_SECRET_KEY
-      });
-      await client.deleteRequisition(requisitionId);
-    } catch (e) {
-      // Ignore Nordigen errors - we'll delete locally anyway
-      console.warn('Could not delete Nordigen requisition:', e);
-    }
-
-    // Delete from our database
-    await db.prepare(`
-      DELETE FROM bank_connections WHERE id = ? AND user_id = ?
-    `).bind(connection_id, user.id).run();
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    console.error('Bank disconnect error:', error);
-    return new Response(JSON.stringify({ error: 'Errore nella disconnessione' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-};
+import { InputError,text } from '../../../lib/validation';
+export const prerender=false;
+export const GET=authenticated(async(_context,db,user)=>{
+  const rows=await db.prepare('SELECT id,institution_id,institution_name,status,last_sync_at,expires_at,created_at FROM bank_connections WHERE user_id=? ORDER BY created_at DESC').bind(user.id).all<Record<string,unknown>>();
+  const states=await db.prepare('SELECT connection_id,last_attempt_at,last_success_at,last_error,retry_at FROM bank_sync_accounts WHERE user_id=?').bind(user.id).all();
+  return json(rows.results.map(row=>({...row,status:row.status==='linked' && (!row.expires_at || Date.parse(String(row.expires_at))<=Date.now())?'expired':row.status,sync_accounts:states.results.filter(s=>s.connection_id===row.id)})));
+});
+export const DELETE=authenticated(async({request,locals},db,user)=>{
+  const id=text((await body(request)).connection_id);
+  const row=await db.prepare('SELECT * FROM bank_connections WHERE id=? AND user_id=?').bind(id,user.id).first<BankConnection>();
+  if(!row)throw new InputError('Collegamento non trovato',404);
+  const {client,key}=bankConfig(locals.runtime.env);
+  await client.deleteRequisition(await safeDecrypt(row.requisition_id,key));
+  // Preserve historical ledger references; a disconnected consent is no longer eligible for sync.
+  await db.prepare("UPDATE bank_connections SET status='expired' WHERE id=? AND user_id=?").bind(id,user.id).run();
+  return json({success:true});
+});

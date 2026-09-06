@@ -6,7 +6,8 @@ const KEY_LENGTH = 256;
 const IV_LENGTH = 12; // 96 bits for GCM
 
 // Convert hex string to Uint8Array
-function hexToBytes(hex: string): Uint8Array {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
+  if (!/^[a-fA-F0-9]{64}$/.test(hex)) throw new Error("Invalid encryption key");
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < bytes.length; i++) {
     bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
@@ -61,7 +62,7 @@ export async function encrypt(plaintext: string, keyHex: string): Promise<string
   combined.set(iv, 0);
   combined.set(new Uint8Array(ciphertext), iv.length);
 
-  return btoa(String.fromCharCode(...combined));
+  return 'v1:' + btoa(String.fromCharCode(...combined));
 }
 
 // Decrypt ciphertext
@@ -69,7 +70,7 @@ export async function decrypt(encryptedData: string, keyHex: string): Promise<st
   const key = await importKey(keyHex);
 
   // Decode base64
-  const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+  const combined = Uint8Array.from(atob(encryptedData.startsWith('v1:') ? encryptedData.slice(3) : encryptedData), c => c.charCodeAt(0));
 
   // Extract IV and ciphertext
   const iv = combined.slice(0, IV_LENGTH);
@@ -84,35 +85,18 @@ export async function decrypt(encryptedData: string, keyHex: string): Promise<st
   return new TextDecoder().decode(decrypted);
 }
 
-// Check if data is already encrypted (base64 encoded)
-export function isEncrypted(data: string): boolean {
-  try {
-    // Encrypted data is base64 encoded and starts with the IV
-    const decoded = atob(data);
-    // Minimum length: 12 bytes IV + at least 16 bytes ciphertext (minimum for GCM)
-    return decoded.length >= 28;
-  } catch {
-    return false;
-  }
+// Only historical provider UUIDs and arrays of UUIDs are accepted as plaintext.
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isLegacyPlaintext(data: string): boolean {
+  if (uuid.test(data)) return true;
+  try { const value: unknown = JSON.parse(data); return Array.isArray(value) && value.every(id=>typeof id==='string' && uuid.test(id)); }
+  catch { return false; }
 }
-
-// Helper: encrypt if not already encrypted
-export async function ensureEncrypted(data: string, keyHex: string): Promise<string> {
-  if (isEncrypted(data)) {
-    return data;
-  }
-  return encrypt(data, keyHex);
+export async function safeDecrypt(data: string,keyHex: string): Promise<string> {
+  if(isLegacyPlaintext(data)) return data;
+  // A wrong key or corrupt ciphertext must never be sent to the provider as an ID.
+  return decrypt(data,keyHex);
 }
-
-// Helper: decrypt if encrypted, otherwise return as-is
-export async function safeDecrypt(data: string, keyHex: string): Promise<string> {
-  if (!isEncrypted(data)) {
-    return data;
-  }
-  try {
-    return await decrypt(data, keyHex);
-  } catch {
-    // If decryption fails, return original data (might be plaintext)
-    return data;
-  }
+export async function ensureEncrypted(data: string,keyHex: string): Promise<string> {
+  return encrypt(await safeDecrypt(data,keyHex),keyHex);
 }
