@@ -10,7 +10,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // Verify cron secret
   const cronSecret = locals.runtime.env.CRON_SECRET;
   const authHeader = request.headers.get('X-Cron-Secret');
-  if (cronSecret && authHeader !== cronSecret) {
+  if (!cronSecret || authHeader !== cronSecret) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
@@ -23,13 +23,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // 2. Cleanup expired sessions
     const sessions = await db.prepare(
-      `DELETE FROM sessions WHERE expires_at < datetime('now')`
+      `DELETE FROM sessions WHERE julianday(expires_at) <= julianday('now')`
     ).run();
     results.sessions_cleaned = sessions.meta.changes;
 
     // 3. Cleanup used/expired password reset tokens
     const tokens = await db.prepare(
-      `DELETE FROM password_reset_tokens WHERE expires_at < datetime('now') OR used = 1`
+      `DELETE FROM password_reset_tokens WHERE julianday(expires_at) <= julianday('now') OR used = 1`
     ).run();
     results.tokens_cleaned = tokens.meta.changes;
 
@@ -38,7 +38,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   } catch (error) {
     console.error('Cron error:', error);
-    return new Response(JSON.stringify({ error: 'Cron failed', details: String(error) }), {
+    return new Response(JSON.stringify({ error: 'Cron failed' }), {
       status: 500, headers: { 'Content-Type': 'application/json' }
     });
   }

@@ -1,95 +1,17 @@
-import type { APIRoute } from 'astro';
-import { getAuthUser } from '../../../lib/auth';
-
+import { authenticated, body, json } from '../../../lib/api';
+import { InputError, positiveId } from '../../../lib/validation';
+import { transactionValues } from '../../../lib/transactions';
 export const prerender = false;
-
-// DELETE - Elimina transazione
-export const DELETE: APIRoute = async ({ params, cookies, locals }) => {
-  const runtime = locals.runtime;
-  const db = runtime.env.DB;
-  const { id } = params;
-
-  // Auth check
-  const user = await getAuthUser(cookies, db);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Non autenticato' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  try {
-    // Only delete if belongs to user
-    await db.prepare('DELETE FROM transactions WHERE id = ? AND user_id = ?')
-      .bind(id, user.id).run();
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Database error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-};
-
-// PUT - Modifica transazione
-export const PUT: APIRoute = async ({ params, request, cookies, locals }) => {
-  const runtime = locals.runtime;
-  const db = runtime.env.DB;
-  const { id } = params;
-
-  // Auth check
-  const user = await getAuthUser(cookies, db);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Non autenticato' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  try {
-    const body = await request.json();
-    const { amount, category_id, description, date } = body;
-
-    // Verify transaction belongs to user
-    const existing = await db.prepare('SELECT id FROM transactions WHERE id = ? AND user_id = ?')
-      .bind(id, user.id).first();
-
-    if (!existing) {
-      return new Response(JSON.stringify({ error: 'Transazione non trovata' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Verify category belongs to user
-    if (category_id) {
-      const category = await db.prepare('SELECT id FROM categories WHERE id = ? AND user_id = ?')
-        .bind(category_id, user.id).first();
-
-      if (!category) {
-        return new Response(JSON.stringify({ error: 'Categoria non valida' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    }
-
-    await db.prepare(`
-      UPDATE transactions
-      SET amount = ?, category_id = ?, description = ?, date = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND user_id = ?
-    `).bind(amount, category_id, description || '', date, id, user.id).run();
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Database error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-};
+export const DELETE = authenticated(async ({params},db,user) => {
+  const result=await db.prepare('DELETE FROM transactions WHERE id=? AND user_id=?').bind(positiveId(params.id),user.id).run();
+  if(!result.meta.changes) throw new InputError('Transazione non trovata',404);
+  return json({success:true});
+});
+export const PUT = authenticated(async ({params,request},db,user) => {
+  const id=positiveId(params.id);
+  const current=await db.prepare('SELECT * FROM transactions WHERE id=? AND user_id=?').bind(id,user.id).first<Record<string,unknown>>();
+  if(!current) throw new InputError('Transazione non trovata',404);
+  const input=await body(request),v=await transactionValues(db,user.id,{...current,...input});
+  await db.prepare('UPDATE transactions SET amount=?,type=?,category_id=?,description=?,date=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?').bind(v.amount,v.type,v.category_id,v.description,v.date,id,user.id).run();
+  return json({success:true});
+});

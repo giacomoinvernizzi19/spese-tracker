@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { validateEmail, generateResetToken, getResetTokenExpiry } from '../../../lib/auth';
 import { checkRateLimit, getClientIP, rateLimitResponse } from '../../../lib/rate-limiter';
 import { Resend } from 'resend';
+import { escapeUTF8 } from 'entities/escape';
 
 export const prerender = false;
 
@@ -9,6 +10,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const db = locals.runtime.env.DB as D1Database;
     const resendApiKey = locals.runtime.env.RESEND_API_KEY as string;
+
+    if (!resendApiKey) return new Response(JSON.stringify({ error: 'Recupero password temporaneamente non disponibile' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
 
     const body = await request.json();
     const { email } = body;
@@ -68,7 +71,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (resendApiKey) {
       const resend = new Resend(resendApiKey);
 
-      await resend.emails.send({
+      const delivery = await resend.emails.send({
         from: "Thinkin' About Money <onboarding@resend.dev>",
         to: user.email,
         subject: "Recupera la tua password - Thinkin' About Money",
@@ -86,7 +89,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             </div>
 
             <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
-              <h2 style="margin-top: 0; color: #1e293b;">Ciao ${user.name},</h2>
+              <h2 style="margin-top: 0; color: #1e293b;">Ciao ${escapeUTF8(user.name)},</h2>
               <p>Hai richiesto di recuperare la password del tuo account Thinkin' About Money.</p>
               <p>Clicca il pulsante qui sotto per impostare una nuova password:</p>
 
@@ -114,12 +117,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           </html>
         `
       });
-    } else {
-      // No API key - log to console for development
-      console.log('=== PASSWORD RESET (dev mode) ===');
-      console.log(`Email: ${user.email}`);
-      console.log(`Reset URL: ${resetUrl}`);
-      console.log('================================');
+      if (delivery.error) throw new Error('Email delivery failed');
     }
 
     return new Response(JSON.stringify({
@@ -131,7 +129,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
 
   } catch (error) {
-    console.error('Forgot password error:', error);
+    console.error('Forgot password request failed');
     return new Response(JSON.stringify({ error: 'Errore durante l\'invio' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

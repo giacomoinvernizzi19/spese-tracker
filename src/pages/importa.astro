@@ -149,7 +149,12 @@ import AppLayout from '../layouts/AppLayout.astro';
 </AppLayout>
 
 <script>
+  import { displayText, displayColor, displayImage } from '../lib/display';
   import * as XLSX from 'xlsx';
+  import { importDigest, importAmount, importDate } from '../lib/import';
+  let fileDigest = '';
+  let importing = false;
+  let fileVersion = 0;
 
   let parsedData: any[] = [];
   let headers: string[] = [];
@@ -180,22 +185,27 @@ import AppLayout from '../layouts/AppLayout.astro';
     if (file) processFile(file);
   });
 
-  function processFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+  async function processFile(file: File) {
+    if (importing) return;
+    const version = ++fileVersion;
+    fileDigest = ''; parsedData = []; headers = [];
+    document.getElementById('preview')!.classList.add('hidden');
+    document.getElementById('success')!.classList.add('hidden');
+    try {
+      const data = new Uint8Array(await file.arrayBuffer());
+      const digest = await importDigest(data);
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
-
-      if (json.length < 2) return alert('File vuoto o senza dati');
-
+      if (version !== fileVersion) return;
+      if (json.length < 2) throw new Error('File vuoto o senza dati');
+      fileDigest = digest;
       headers = json[0].map(String);
       parsedData = json.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== ''));
-
       showPreview();
-    };
-    reader.readAsArrayBuffer(file);
+    } catch (error) {
+      if (version === fileVersion) alert(error instanceof Error ? error.message : 'File non leggibile');
+    }
   }
 
 
@@ -242,6 +252,7 @@ import AppLayout from '../layouts/AppLayout.astro';
       body: JSON.stringify({ name, parent_id: parentId })
     });
     const newCat = await res.json();
+    if (!res.ok) throw new Error(newCat.error || 'Categoria non salvata');
     const created = { id: newCat.id, name, parent_id: parentId, children: [] };
     
     if (parentId) {
@@ -262,15 +273,15 @@ import AppLayout from '../layouts/AppLayout.astro';
 
     // Header
     document.getElementById('previewHeader')!.innerHTML = headers
-      .map(h => `<th class="px-3 py-2 text-left">${h}</th>`).join('');
+      .map(h => `<th class="px-3 py-2 text-left">${displayText(h)}</th>`).join('');
 
     // Body (first 5 rows)
     document.getElementById('previewBody')!.innerHTML = parsedData.slice(0, 5)
-      .map(row => `<tr>${headers.map((_, i) => `<td class="px-3 py-2 border-t">${row[i] ?? ''}</td>`).join('')}</tr>`)
+      .map(row => `<tr>${headers.map((_, i) => `<td class="px-3 py-2 border-t">${displayText(row[i] ?? '')}</td>`).join('')}</tr>`)
       .join('');
 
     // Populate column selectors
-    const options = headers.map((h, i) => `<option value="${i}">${h}</option>`).join('');
+    const options = headers.map((h, i) => `<option value="${i}">${displayText(h)}</option>`).join('');
     ['dateCol', 'amountCol', 'categoryCol'].forEach(id => {
       document.getElementById(id)!.innerHTML = options;
     });
@@ -293,94 +304,47 @@ import AppLayout from '../layouts/AppLayout.astro';
   }
 
   document.getElementById('importBtn')?.addEventListener('click', async () => {
-    const dateCol = parseInt((document.getElementById('dateCol') as HTMLSelectElement).value);
-    const amountCol = parseInt((document.getElementById('amountCol') as HTMLSelectElement).value);
-    const categoryCol = parseInt((document.getElementById('categoryCol') as HTMLSelectElement).value);
-    const subCategoryCol = (document.getElementById('subCategoryCol') as HTMLSelectElement).value;
-    const descCol = (document.getElementById('descCol') as HTMLSelectElement).value;
-
-    document.getElementById('preview')!.classList.add('hidden');
-    document.getElementById('progress')!.classList.remove('hidden');
-
-    let imported = 0;
-    let createdCats = 0;
-    let createdSubs = 0;
-
-    for (const row of parsedData) {
-      const rawDate = row[dateCol];
-      const amount = parseFloat(String(row[amountCol]).replace(',', '.')) || 0;
-      const rawCategory = String(row[categoryCol] || '').trim();
-      const rawSubCategory = subCategoryCol ? String(row[parseInt(subCategoryCol)] || '').trim() : '';
-      const description = descCol ? String(row[parseInt(descCol)] || '') : '';
-
-      if (!amount || !rawCategory) continue;
-
-      // Parse date
-      let date: string;
-      if (typeof rawDate === 'number') {
-        const d = new Date((rawDate - 25569) * 86400 * 1000);
-        date = d.toISOString().split('T')[0];
-      } else {
-        const parsed = new Date(rawDate);
-        if (isNaN(parsed.getTime())) continue;
-        date = parsed.toISOString().split('T')[0];
+    if(importing || !fileDigest) return;
+    importing=true;
+    const button=document.getElementById('importBtn') as HTMLButtonElement;
+    button.disabled=true;
+    const column=(id:string)=>(document.getElementById(id) as HTMLSelectElement).value;
+    const mapping={date:column('dateCol'),amount:column('amountCol'),category:column('categoryCol'),sub:column('subCategoryCol'),description:column('descCol')};
+    const errors:string[]=[];
+    let imported=0,duplicates=0;
+    try {
+      const batch=fileDigest;
+      document.getElementById('progress')!.classList.remove('hidden');
+      for(const [index,row] of parsedData.entries()) {
+        try {
+          const amount=importAmount(row[Number(mapping.amount)]),date=importDate(row[Number(mapping.date)]);
+          const rawCategory=String(row[Number(mapping.category)] ?? '').trim();
+          if(!rawCategory) throw new Error('Categoria mancante');
+          const rawSub=mapping.sub ? String(row[Number(mapping.sub)] ?? '').trim() : '';
+          const parsed=rawSub ? {parent:rawCategory,sub:rawSub} : parseCategoryString(rawCategory);
+          const {category:parent}=await findOrCreateCategory(parsed.parent,null);
+          const category=parsed.sub ? (await findOrCreateCategory(parsed.sub,parent.id)).category : parent;
+          const response=await fetch('/api/transactions',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({amount,date,type:'expense',category_id:category.id,description:mapping.description ? String(row[Number(mapping.description)] ?? '') : '',source:'import',import_batch_id:batch,import_row_id:index})
+          });
+          const result=await response.json();
+          if(!response.ok) throw new Error(result.error || 'Riga non salvata');
+          if(result.duplicate) duplicates++; else imported++;
+        } catch(error) {
+          errors.push(`Riga dati ${index+1}: ${error instanceof Error ? error.message : 'Errore imprevisto'}`);
+        }
+        document.getElementById('importedCount')!.textContent=String(imported);
+        (document.getElementById('progressBar') as HTMLElement).style.width=`${((index+1)/parsedData.length)*100}%`;
       }
-
-      // Determine parent and subcategory
-      let parentName: string;
-      let subName: string | null;
-      if (rawSubCategory) {
-        parentName = rawCategory;
-        subName = rawSubCategory;
-      } else {
-        const parsed = parseCategoryString(rawCategory);
-        parentName = parsed.parent;
-        subName = parsed.sub;
-      }
-
-      // Find or create parent category
-      const { category: parentCat, created: parentCreated } = await findOrCreateCategory(parentName, null);
-      if (parentCreated) createdCats++;
-
-      // Find or create subcategory if needed
-      let finalCategoryId = parentCat.id;
-      if (subName) {
-        const { category: subCat, created: subCreated } = await findOrCreateCategory(subName, parentCat.id);
-        finalCategoryId = subCat.id;
-        if (subCreated) createdSubs++;
-      }
-
-      // Create transaction
-      await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount,
-          date,
-          category_id: finalCategoryId,
-          description
-        })
-      });
-
-      imported++;
-      document.getElementById('importedCount')!.textContent = imported.toString();
-      (document.getElementById('progressBar') as HTMLElement).style.width =
-        `${(imported / parsedData.length) * 100}%`;
-    }
-
-    document.getElementById('progress')!.classList.add('hidden');
-    document.getElementById('success')!.classList.remove('hidden');
-    
-    // Show created categories info
-    if (createdCats > 0 || createdSubs > 0) {
-      const info = [];
-      if (createdCats > 0) info.push(createdCats + ' categorie');
-      if (createdSubs > 0) info.push(createdSubs + ' sottocategorie');
-      const successEl = document.getElementById('success')!;
-      const p = document.createElement('p');
-      p.className = 'text-sm text-gray-500 mt-1';
-      p.textContent = 'Create: ' + info.join(', ');
-      successEl.querySelector('p')?.after(p);
-    }
-  });;
+      const result=document.getElementById('success')!;
+      result.classList.remove('hidden');
+      result.querySelector('p')!.textContent=`${imported} righe importate, ${duplicates} già presenti, ${errors.length} rifiutate.`;
+      let details=document.getElementById('importErrors');
+      if(!details){details=document.createElement('pre');details.id='importErrors';details.className='whitespace-pre-wrap text-sm text-red-600 text-left';result.append(details);}
+      details.textContent=errors.join('\n');
+      button.textContent=errors.length?'Riprova righe non importate':'Importa';
+    } catch(error){ alert(error instanceof Error?error.message:'Importazione non riuscita'); }
+    finally { importing=false;button.disabled=false;document.getElementById('progress')!.classList.add('hidden'); }
+  });
 </script>

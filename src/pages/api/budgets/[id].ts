@@ -1,121 +1,20 @@
-import type { APIRoute } from 'astro';
-import { getAuthUser } from '../../../lib/auth';
-
-export const prerender = false;
-
-// PUT - Aggiorna budget
-export const PUT: APIRoute = async ({ params, request, cookies, locals }) => {
-  const runtime = locals.runtime;
-  const db = runtime.env.DB;
-
-  const user = await getAuthUser(cookies, db);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Non autenticato' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  const { id } = params;
-
-  try {
-    // Verify budget belongs to user
-    const budget = await db.prepare(`
-      SELECT id FROM budgets WHERE id = ? AND user_id = ?
-    `).bind(id, user.id).first();
-
-    if (!budget) {
-      return new Response(JSON.stringify({ error: 'Budget non trovato' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    const body = await request.json();
-    const { amount, period } = body;
-
-    if (amount !== undefined && amount <= 0) {
-      return new Response(JSON.stringify({ error: 'amount deve essere positivo' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Build update query dynamically
-    const updates: string[] = [];
-    const values: any[] = [];
-
-    if (amount !== undefined) {
-      updates.push('amount = ?');
-      values.push(amount);
-    }
-    if (period !== undefined) {
-      updates.push('period = ?');
-      values.push(period);
-    }
-
-    if (updates.length === 0) {
-      return new Response(JSON.stringify({ error: 'Nessun campo da aggiornare' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    updates.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(id);
-
-    await db.prepare(`
-      UPDATE budgets SET ${updates.join(', ')} WHERE id = ?
-    `).bind(...values).run();
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    console.error('Budget PUT error:', error);
-    return new Response(JSON.stringify({ error: 'Database error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-};
-
-// DELETE - Elimina budget
-export const DELETE: APIRoute = async ({ params, cookies, locals }) => {
-  const runtime = locals.runtime;
-  const db = runtime.env.DB;
-
-  const user = await getAuthUser(cookies, db);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Non autenticato' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  const { id } = params;
-
-  try {
-    // Verify budget belongs to user before deleting
-    const result = await db.prepare(`
-      DELETE FROM budgets WHERE id = ? AND user_id = ?
-    `).bind(id, user.id).run();
-
-    if (result.meta.changes === 0) {
-      return new Response(JSON.stringify({ error: 'Budget non trovato' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    console.error('Budget DELETE error:', error);
-    return new Response(JSON.stringify({ error: 'Database error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-};
+import { authenticated, body, json } from '../../../lib/api';
+import { InputError, positiveAmount, positiveId } from '../../../lib/validation';
+export const prerender=false;
+export const PUT=authenticated(async ({params,request},db,user)=>{
+  const id=positiveId(params.id),input=await body(request);
+  const current=await db.prepare('SELECT * FROM budgets WHERE id=? AND user_id=?').bind(id,user.id).first();
+  if(!current) throw new InputError('Budget non trovato',404);
+  const amount=positiveAmount(input.amount ?? current.amount),period=input.period ?? current.period;
+  if(period!=='monthly' && period!=='yearly') throw new InputError('Periodo non valido');
+  if(current.year!==null && period!==current.period) throw new InputError('Un budget datato mantiene il proprio periodo');
+  const duplicate=await db.prepare('SELECT id FROM budgets WHERE user_id=? AND category_id IS ? AND period=? AND year IS ? AND month IS ? AND id<>?').bind(user.id,current.category_id,period,current.year,current.month,id).first();
+  if(duplicate) throw new InputError('Esiste già un budget per questo periodo',409);
+  await db.prepare('UPDATE budgets SET amount=?,period=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?').bind(amount,period,id,user.id).run();
+  return json({success:true});
+});
+export const DELETE=authenticated(async ({params},db,user)=>{
+  const result=await db.prepare('DELETE FROM budgets WHERE id=? AND user_id=?').bind(positiveId(params.id),user.id).run();
+  if(!result.meta.changes) throw new InputError('Budget non trovato',404);
+  return json({success:true});
+});

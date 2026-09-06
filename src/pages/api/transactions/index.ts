@@ -1,3 +1,5 @@
+import { authenticated, body, json } from '../../../lib/api';
+import { createTransaction } from '../../../lib/transactions';
 import type { APIRoute } from 'astro';
 import { getAuthUser } from '../../../lib/auth';
 
@@ -74,56 +76,8 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
   }
 };
 
-// POST - Nuova transazione
-export const POST: APIRoute = async ({ request, cookies, locals }) => {
-  const runtime = locals.runtime;
-  const db = runtime.env.DB;
-
-  // Auth check
-  const user = await getAuthUser(cookies, db);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Non autenticato' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  try {
-    const body = await request.json();
-    const { amount, category_id, description, date, type = 'expense' } = body;
-
-    if (!amount || !category_id || !date) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Verify category belongs to user
-    const category = await db.prepare('SELECT id FROM categories WHERE id = ? AND user_id = ?')
-      .bind(category_id, user.id).first();
-
-    if (!category) {
-      return new Response(JSON.stringify({ error: 'Categoria non valida' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    const result = await db.prepare(`
-      INSERT INTO transactions (user_id, amount, type, description, category_id, date, source)
-      VALUES (?, ?, ?, ?, ?, ?, 'manual')
-    `).bind(user.id, amount, type, description || '', category_id, date).run();
-
-    return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    console.error('Error creating transaction:', error);
-    return new Response(JSON.stringify({ error: 'Database error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-};
+// POST - Manual and file imports share validation and persistence.
+export const POST = authenticated(async ({request},db,user) => {
+  const result=await createTransaction(db,user.id,await body(request));
+  return json({success:true,...result},result.duplicate?200:201);
+});

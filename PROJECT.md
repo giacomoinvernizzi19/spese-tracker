@@ -179,13 +179,7 @@ Personal expense tracking app with bank sync, developed for personal use.
 
 ## Browser Testing
 
-Usare **Playwright Skill** (non MCP) per testare UI. Vedi `CLAUDE.md` Rule 1.10.
-
-```bash
-# Dev server: npm run dev (porta 4321, Astro)
-# Esecuzione test
-cd C:/ClaudeCode/.claude/skills/playwright-skill && node run.js "C:/tmp/playwright-test-*.js"
-```
+Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler locale con D1 isolato e dati sintetici; mai usare dati bancari reali nei fixture.
 
 **Checklist post-modifica UI:**
 - [ ] Login/register flow
@@ -200,6 +194,7 @@ cd C:/ClaudeCode/.claude/skills/playwright-skill && node run.js "C:/tmp/playwrig
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | API, import, ricorrenze, auth e template HTML | PASS | Code review e continuous-improvement PASS; 11 test, build e smoke import locali PASS |
 | 2026-09-06 | Migrazioni baseline/ledger, API budget, auth UI, test e runbook | PASS | Code review PASS; CI documentale allineata; 4 test, D1, build, restore backup e Playwright locali PASS. Produzione invariata |
 | 2026-09-06 | PROJECT.md, docs/plans/2026-09-06-remediation.md | PASS | Nota fattibilità Trade Republic: fonti ufficiali e selettori GoCardless IT/DE verificati, review continuous-improvement; supporto autenticato non ancora confermato |
 | 2026-09-06 | PROJECT.md, ROADMAP.md, docs/plans/2026-09-06-remediation.md | PASS | Review continuous-improvement e link locali/diff verificati; sola pianificazione, nessun codice o dato remoto modificato |
@@ -218,3 +213,12 @@ cd C:/ClaudeCode/.claude/skills/playwright-skill && node run.js "C:/tmp/playwrig
 - Recuperate le due pagine password del checkout originale; del lockfile recuperati soltanto nome/versione. Checkout originale preservato.
 - Wrangler locale installato usa runtime con compatibilità massima 2025-11-18 e segnala fallback rispetto a 2026-01-04; riallineamento tooling da verificare prima del deploy.
 - Il tracking migrazioni remoto resta da riconciliare prima di qualsiasi apply; nessuna migrazione o deploy remoto effettuati.
+
+## Evidenze P1 integrità — 6 settembre 2026
+
+- Validatori e wrapper API condivisi in `src/lib/{api,validation,transactions}.ts`; import con identità stabile SHA256 file/riga, ricorrenze con vincolo e checkpoint atomico. Identità indipendente dalle colonne selezionate: un retry con payload diverso risponde 409.
+- `src/lib/display.ts` riusa `entities/escape` 6.0.1 già installato, dichiarato esplicitamente senza installare pacchetti. Encoding dei dati nei template HTML di sei pagine; validazione separata di colori e URL immagini.
+- Test 11/11 e build PASS. Playwright su D1 locale: 2 righe importate/1 rifiutata, retry 0 nuove/2 già presenti, cambio colonne 409 senza duplicati; payload HTML resta testo.
+- Ripristino password atomico e monouso, sessioni invalidate; cron senza secret rifiutato; Resend mancante non emette token né URL nei log. Email reale non testata.
+- Controllo tipi ancora bloccato dagli errori preesistenti nel client bancario/cifratura e Capacitor: risoluzione prevista nel blocco banche/tooling.
+- Recupero configurazione: vecchio Worker `spese-tracker` contiene i nomi NORDIGEN_SECRET_ID, NORDIGEN_SECRET_KEY e RESEND_API_KEY; Worker attuale soltanto CRON_SECRET. Nessuna ENCRYPTION_KEY nei due. Cloudflare non restituisce i valori dei secret. Utente segnala possibile perdita delle credenziali e disponibilità a ricrearle. Nessuna rotazione effettuata.

@@ -1,3 +1,5 @@
+import { authenticated, body, json } from '../../../lib/api';
+import { InputError, ownedCategory, positiveAmount } from '../../../lib/validation';
 import type { APIRoute } from 'astro';
 import { getAuthUser } from '../../../lib/auth';
 
@@ -81,70 +83,16 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
   }
 };
 
-// POST - Crea nuovo budget
-export const POST: APIRoute = async ({ request, cookies, locals }) => {
-  const runtime = locals.runtime;
-  const db = runtime.env.DB;
-
-  const user = await getAuthUser(cookies, db);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Non autenticato' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+export const POST = authenticated(async ({request},db,user) => {
+  const input=await body(request), amount=positiveAmount(input.amount), category=await ownedCategory(db,user.id,input.category_id);
+  if(!category) throw new InputError('Categoria obbligatoria');
+  const period=input.period ?? 'monthly';
+  if(period!=='monthly' && period!=='yearly') throw new InputError('Periodo non valido');
+  const existing=await db.prepare('SELECT id FROM budgets WHERE user_id=? AND category_id=? AND period=? AND year IS NULL AND month IS NULL').bind(user.id,category,period).first();
+  if(existing){
+    await db.prepare('UPDATE budgets SET amount=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?').bind(amount,existing.id,user.id).run();
+    return json({success:true,id:existing.id,updated:true});
   }
-
-  try {
-    const body = await request.json();
-    const { category_id, amount, period = 'monthly' } = body;
-
-    if (!category_id || !amount) {
-      return new Response(JSON.stringify({ error: 'category_id e amount sono obbligatori' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    if (amount <= 0) {
-      return new Response(JSON.stringify({ error: 'amount deve essere positivo' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Check if budget already exists for this category/period
-    const existing = await db.prepare(`
-      SELECT id FROM budgets
-      WHERE user_id = ? AND category_id = ? AND period = ? AND year IS NULL AND month IS NULL
-    `).bind(user.id, category_id, period).first();
-
-    if (existing) {
-      // Update existing
-      await db.prepare(`
-        UPDATE budgets SET amount = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).bind(amount, existing.id).run();
-
-      return new Response(JSON.stringify({ success: true, id: existing.id, updated: true }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    // Create new
-    const result = await db.prepare(`
-      INSERT INTO budgets (user_id, category_id, amount, period)
-      VALUES (?, ?, ?, ?)
-    `).bind(user.id, category_id, amount, period).run();
-
-    return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    console.error('Budget POST error:', error);
-    return new Response(JSON.stringify({ error: 'Database error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-};
+  const result=await db.prepare('INSERT INTO budgets(user_id,category_id,amount,period) VALUES(?,?,?,?)').bind(user.id,category,amount,period).run();
+  return json({success:true,id:result.meta.last_row_id},201);
+});

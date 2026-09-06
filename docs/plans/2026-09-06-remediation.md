@@ -48,6 +48,8 @@ Precedenti da conservare: `5fda96f` e `8980d48` per auth/cifratura/rate limit; `
 
 ### PR 2 — sicurezza e salvataggi con esiti corretti
 
+**Avanzamento:** codice e 11 regressioni locali preparati; build e smoke import Playwright PASS. Configurazione e prova reale Resend ancora mancanti.
+
 **Scopo:** correggere i difetti attuali prima di introdurre altri dati bancari.
 
 - Eliminare l'inserimento di contenuti non fidati tramite `innerHTML` nei percorsi coinvolti e cercare gli stessi casi in import, categorie, nuova spesa, impostazioni, banche e report. Usare escaping dei template Svelte o `textContent`, senza creare un sanitizzatore artigianale.
