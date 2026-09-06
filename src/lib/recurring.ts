@@ -1,86 +1,48 @@
-// Generate pending transactions from recurring definitions
+import { dateOnly, ownedCategory, positiveAmount, transactionType } from './validation';
 
-export async function generatePendingTransactions(db: D1Database, userId?: string): Promise<number> {
-  const today = new Date().toISOString().split('T')[0];
-  let generated = 0;
-
-  // Get all active recurring transactions (optionally filtered by user)
-  let query = `SELECT * FROM recurring_transactions WHERE active = 1`;
-  const params: any[] = [];
-
-  if (userId) {
-    query += ` AND user_id = ?`;
-    params.push(userId);
-  }
-
-  // Skip if end_date has passed
-  query += ` AND (end_date IS NULL OR end_date >= ?)`;
-  params.push(today);
-
-  const recurring = await db.prepare(query).bind(...params).all();
-
-  for (const rec of recurring.results as any[]) {
-    const dates = getDueDates(rec, today);
-
-    for (const date of dates) {
-      await db.prepare(`
-        INSERT INTO transactions (user_id, amount, type, description, category_id, date, source)
-        VALUES (?, ?, ?, ?, ?, ?, 'recurring')
-      `).bind(rec.user_id, rec.amount, rec.type, rec.description || '', rec.category_id, date).run();
-      generated++;
-    }
-
-    if (dates.length > 0) {
-      // Update last_generated to the latest generated date
-      const lastDate = dates[dates.length - 1];
-      await db.prepare(`UPDATE recurring_transactions SET last_generated = ? WHERE id = ?`)
-        .bind(lastDate, rec.id).run();
-    }
-  }
-
-  return generated;
+export interface Recurring {
+  id: number; user_id: string; amount: number; type: 'expense' | 'income';
+  description: string | null; category_id: number | null;
+  frequency: 'monthly' | 'weekly' | 'yearly'; day_of_month: number | null;
+  start_date: string; end_date: string | null; last_generated: string | null;
 }
-
-function getDueDates(rec: any, todayStr: string): string[] {
+const lastDay = (year: number, month: number) => new Date(Date.UTC(year,month+1,0)).getUTCDate();
+export function getDueDates(rec: Recurring, today: string): string[] {
+  dateOnly(rec.start_date); dateOnly(today);
+  if (rec.end_date) dateOnly(rec.end_date);
+  const end = rec.end_date && rec.end_date < today ? rec.end_date : today;
+  const start = new Date(`${rec.start_date}T00:00:00Z`);
+  let cursor = new Date(`${rec.last_generated ?? rec.start_date}T00:00:00Z`);
+  if (rec.last_generated) cursor.setUTCDate(cursor.getUTCDate()+1);
+  if (cursor < start) cursor = new Date(start);
   const dates: string[] = [];
-  const today = new Date(todayStr);
-  const startDate = new Date(rec.start_date);
-  const lastGenerated = rec.last_generated ? new Date(rec.last_generated) : null;
-
-  // Start from day after last_generated, or start_date if never generated
-  let cursor = lastGenerated
-    ? new Date(lastGenerated.getTime() + 86400000) // next day
-    : new Date(startDate);
-
-  while (cursor <= today) {
-    if (isDue(rec, cursor)) {
-      const dateStr = cursor.toISOString().split('T')[0];
-      // Don't generate before start_date
-      if (dateStr >= rec.start_date) {
-        // Don't generate after end_date
-        if (!rec.end_date || dateStr <= rec.end_date) {
-          dates.push(dateStr);
-        }
-      }
-    }
-    cursor = new Date(cursor.getTime() + 86400000); // advance one day
+  while (cursor.toISOString().slice(0,10) <= end) {
+    const year=cursor.getUTCFullYear(), month=cursor.getUTCMonth(), day=cursor.getUTCDate();
+    const due = rec.frequency === 'weekly' ? cursor.getUTCDay() === (rec.day_of_month ?? 1)
+      : rec.frequency === 'monthly' ? day === Math.min(rec.day_of_month ?? 1,lastDay(year,month))
+      : month === start.getUTCMonth() && day === Math.min(start.getUTCDate(),lastDay(year,month));
+    if (due) dates.push(cursor.toISOString().slice(0,10));
+    cursor.setUTCDate(cursor.getUTCDate()+1);
   }
-
   return dates;
 }
 
-function isDue(rec: any, date: Date): boolean {
-  switch (rec.frequency) {
-    case 'monthly':
-      return date.getDate() === (rec.day_of_month || 1);
-    case 'weekly':
-      // day_of_month used as day of week (0=Sunday)
-      return date.getDay() === (rec.day_of_month || 1);
-    case 'yearly': {
-      const start = new Date(rec.start_date);
-      return date.getMonth() === start.getMonth() && date.getDate() === start.getDate();
+export async function generatePendingTransactions(db: D1Database, userId?: string, today = new Date().toISOString().slice(0,10)): Promise<number> {
+  const query = db.prepare('SELECT * FROM recurring_transactions WHERE active = 1' + (userId ? ' AND user_id = ?' : ''));
+  const result = await (userId ? query.bind(userId) : query).all<Recurring>();
+  let generated = 0;
+  for (const rec of result.results) {
+    positiveAmount(rec.amount); transactionType(rec.type); await ownedCategory(db,rec.user_id,rec.category_id);
+    for (const date of getDueDates(rec,today)) {
+      const results = await db.batch([
+        db.prepare(`INSERT INTO transactions (user_id,amount,type,description,category_id,date,source,recurring_id,occurrence_date)
+          VALUES (?,?,?,?,?,?,'recurring',?,?)
+          ON CONFLICT(user_id,recurring_id,occurrence_date) WHERE recurring_id IS NOT NULL DO NOTHING`)
+          .bind(rec.user_id,rec.amount,rec.type,rec.description ?? '',rec.category_id,date,rec.id,date),
+        db.prepare('UPDATE recurring_transactions SET last_generated = MAX(COALESCE(last_generated, ?), ?) WHERE id = ? AND user_id = ?').bind(date,date,rec.id,rec.user_id),
+      ]);
+      generated += results[0].meta.changes;
     }
-    default:
-      return false;
   }
+  return generated;
 }

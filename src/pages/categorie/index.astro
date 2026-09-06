@@ -107,6 +107,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
 </AppLayout>
 
 <script>
+  import { displayText, displayColor, displayImage } from '../../lib/display';
   let categories: any[] = [];
   let flatCategories: any[] = [];
   let budgets: Map<string, number> = new Map();
@@ -150,7 +151,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
     // Mostra solo categorie root (senza parent_id)
     const rootCategories = flatCategories.filter(c => !c.parent_id);
     select.innerHTML = '<option value="">- Categoria principale -</option>' +
-      rootCategories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+      rootCategories.map(c => `<option value="${c.id}">${displayText(c.icon)} ${displayText(c.name)}</option>`).join('');
   }
 
   function renderCategories() {
@@ -166,21 +167,21 @@ import AppLayout from '../../layouts/AppLayout.astro';
         <div class="p-4 flex items-center gap-4 border-b border-gray-100 dark:border-gray-700">
           <div
             class="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-            style="background-color: ${cat.color}20"
+            style="background-color: ${displayColor(cat.color)}20"
           >
-            ${cat.icon}
+            ${displayText(cat.icon)}
           </div>
           <div class="flex-1">
-            <div class="font-medium text-gray-900 dark:text-gray-100">${cat.name}</div>
+            <div class="font-medium text-gray-900 dark:text-gray-100">${displayText(cat.name)}</div>
             ${cat.children?.length ? `<div class="text-xs text-gray-500 dark:text-gray-400">${cat.children.length} sottocategorie</div>` : ''}
             ${budgetDisplay}
           </div>
           <button
             class="edit-btn p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
             data-id="${cat.id}"
-            data-name="${cat.name}"
-            data-icon="${cat.icon}"
-            data-color="${cat.color}"
+            data-name="${displayText(cat.name)}"
+            data-icon="${displayText(cat.icon)}"
+            data-color="${displayColor(cat.color)}"
             data-parent-id=""
           >
             ✏️
@@ -190,22 +191,22 @@ import AppLayout from '../../layouts/AppLayout.astro';
         ${cat.children?.length ? `
           <div class="divide-y divide-gray-100 dark:divide-gray-700">
             ${cat.children.map((sub: any) => `
-              <div class="p-3 flex items-center gap-3 pl-6 border-l-4" style="border-color: ${sub.color}">
+              <div class="p-3 flex items-center gap-3 pl-6 border-l-4" style="border-color: ${displayColor(sub.color)}">
                 <div
                   class="w-10 h-10 rounded-full flex items-center justify-center text-xl"
-                  style="background-color: ${sub.color}20"
+                  style="background-color: ${displayColor(sub.color)}20"
                 >
-                  ${sub.icon}
+                  ${displayText(sub.icon)}
                 </div>
                 <div class="flex-1">
-                  <div class="font-medium text-gray-900 dark:text-gray-100 text-sm">${sub.name}</div>
+                  <div class="font-medium text-gray-900 dark:text-gray-100 text-sm">${displayText(sub.name)}</div>
                 </div>
                 <button
                   class="edit-btn p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                   data-id="${sub.id}"
-                  data-name="${sub.name}"
-                  data-icon="${sub.icon}"
-                  data-color="${sub.color}"
+                  data-name="${displayText(sub.name)}"
+                  data-icon="${displayText(sub.icon)}"
+                  data-color="${displayColor(sub.color)}"
                   data-parent-id="${cat.id}"
                 >
                   ✏️
@@ -333,6 +334,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
         body: JSON.stringify({ name, icon: selectedIcon, color: selectedColor, parent_id: selectedParentId })
       });
 
+      if (!categoryRes.ok) throw new Error((await categoryRes.json()).error || 'Categoria non salvata');
       // Save budget if it's a root category (no parent) and budget is specified
       if (!selectedParentId) {
         const budgetValue = (document.getElementById('categoryBudget') as HTMLInputElement).value;
@@ -340,11 +342,12 @@ import AppLayout from '../../layouts/AppLayout.astro';
         const categoryId = editingId || (await categoryRes.json()).id;
 
         if (budgetAmount > 0) {
-          await fetch('/api/budgets', {
+          const budgetRes = await fetch('/api/budgets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ category_id: categoryId, amount: budgetAmount, period: 'monthly' })
           });
+          if (!budgetRes.ok) throw new Error((await budgetRes.json()).error || 'Budget non salvato');
         }
       }
 

@@ -80,6 +80,7 @@ import AppLayout from '../layouts/AppLayout.astro';
 </AppLayout>
 
 <script>
+  import { displayText, displayColor, displayImage } from '../lib/display';
   // State
   let amount = '';
   let selectedCategory: number | null = null;
@@ -149,8 +150,8 @@ import AppLayout from '../layouts/AppLayout.astro';
         data-category-id="${cat.id}"
         class="category-btn flex flex-col items-center p-2 lg:p-3 rounded-lg border-2 transition-all border-gray-200 hover:border-gray-300"
       >
-        <span class="text-2xl lg:text-3xl">${cat.icon}</span>
-        <span class="text-xs lg:text-sm text-gray-600 truncate w-full text-center">${cat.name}</span>
+        <span class="text-2xl lg:text-3xl">${displayText(cat.icon)}</span>
+        <span class="text-xs lg:text-sm text-gray-600 truncate w-full text-center">${displayText(cat.name)}</span>
       </button>
     `).join('');
 

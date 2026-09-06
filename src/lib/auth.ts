@@ -85,7 +85,7 @@ export async function getAuthUser(
     SELECT s.*, u.id as user_id, u.email, u.name, u.created_at
     FROM sessions s
     JOIN users u ON s.user_id = u.id
-    WHERE s.id = ? AND s.expires_at > datetime('now')
+    WHERE s.id = ? AND julianday(s.expires_at) > julianday('now')
   `).bind(sessionId).first<Session & User>();
 
   if (!session) {
@@ -118,7 +118,7 @@ export async function deleteSession(
 
 // Cleanup expired sessions (call periodically)
 export async function cleanupExpiredSessions(db: D1Database): Promise<void> {
-  await db.prepare(`DELETE FROM sessions WHERE expires_at < datetime('now')`).run();
+  await db.prepare(`DELETE FROM sessions WHERE julianday(expires_at) <= julianday('now')`).run();
 }
 
 // Create default categories for new user

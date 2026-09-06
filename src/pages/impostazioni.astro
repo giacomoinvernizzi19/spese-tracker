@@ -197,6 +197,7 @@ import AppLayout from '../layouts/AppLayout.astro';
 </AppLayout>
 
 <script>
+  import { displayText, displayColor, displayImage } from '../lib/display';
   import * as XLSX from 'xlsx';
   import { toggleTheme, isDarkMode } from '../lib/theme';
 
@@ -300,6 +301,7 @@ import AppLayout from '../layouts/AppLayout.astro';
         fetch('/api/recurring'),
         fetch('/api/categories')
       ]);
+      if (!recRes.ok || !catRes.ok) throw new Error('Caricamento non riuscito');
       recurringItems = await recRes.json();
       categories = await catRes.json();
       renderRecurring();
@@ -318,10 +320,10 @@ import AppLayout from '../layouts/AppLayout.astro';
     container.innerHTML = recurringItems.map(r => `
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-3">
-          <span class="text-2xl">${r.category_icon || '\u{1F4E6}'}</span>
+          <span class="text-2xl">${displayText(r.category_icon || '\u{1F4E6}')}</span>
           <div>
-            <p class="font-medium dark:text-gray-100">${r.description || r.category_name || 'Ricorrente'}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">${freqLabels[r.frequency] || r.frequency} &middot; \u20AC${Number(r.amount).toFixed(2)}</p>
+            <p class="font-medium dark:text-gray-100">${displayText(r.description || r.category_name || 'Ricorrente')}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">${displayText(freqLabels[r.frequency] || r.frequency)} &middot; \u20AC${Number(r.amount).toFixed(2)}</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -334,18 +336,19 @@ import AppLayout from '../layouts/AppLayout.astro';
     container.querySelectorAll('.del-recurring').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Eliminare questa spesa ricorrente?')) return;
-        await fetch('/api/recurring', {
+        const response = await fetch('/api/recurring', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: parseInt((btn as HTMLElement).dataset.id!) })
         });
+        if (!response.ok) { alert((await response.json()).error || 'Eliminazione non riuscita'); return; }
         loadRecurring();
       });
     });
   }
 
   document.getElementById('addRecurringBtn')?.addEventListener('click', () => {
-    const catOptions = categories.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+    const catOptions = categories.map(c => `<option value="${c.id}">${displayText(c.icon)} ${displayText(c.name)}</option>`).join('');
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center';
     modal.innerHTML = `
@@ -392,12 +395,16 @@ import AppLayout from '../layouts/AppLayout.astro';
     document.body.appendChild(modal);
     (modal.querySelector('#recStart') as HTMLInputElement).value = new Date().toISOString().split('T')[0];
 
+    const frequency = modal.querySelector('#recFreq') as HTMLSelectElement;
+    const day = modal.querySelector('#recDay') as HTMLInputElement;
+    frequency.addEventListener('change', () => { day.min = frequency.value === 'weekly' ? '0' : '1'; day.max = frequency.value === 'weekly' ? '6' : '31'; day.value = '1'; });
+    const note = document.createElement('p'); note.className = 'text-xs text-gray-500'; note.textContent = 'Settimanale: 0 domenica, 1 lunedì, …, 6 sabato. Giorni mensili non presenti: ultimo giorno del mese; 29 febbraio annuale: 28 febbraio negli anni non bisestili.'; day.after(note);
     modal.querySelector('#recCancel')?.addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
     modal.querySelector('#recSave')?.addEventListener('click', async () => {
       const amount = parseFloat((modal.querySelector('#recAmount') as HTMLInputElement).value);
       if (!amount) { alert('Inserisci un importo'); return; }
-      await fetch('/api/recurring', {
+      const response = await fetch('/api/recurring', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -409,6 +416,9 @@ import AppLayout from '../layouts/AppLayout.astro';
           start_date: (modal.querySelector('#recStart') as HTMLInputElement).value,
         })
       });
+      const result = await response.json();
+      if (!response.ok) { alert(result.error || 'Salvataggio non riuscito'); return; }
+      if (result.generation_error) alert(result.generation_error);
       modal.remove();
       loadRecurring();
     });

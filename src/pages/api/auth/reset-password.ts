@@ -19,14 +19,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const { token, password } = body;
 
     // Validate input
-    if (!token) {
+    if (typeof token !== 'string' || !token) {
       return new Response(JSON.stringify({ error: 'Token mancante' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    if (!password) {
+    if (typeof password !== 'string' || !password) {
       return new Response(JSON.stringify({ error: 'Password mancante' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -92,20 +92,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Hash new password
     const passwordHash = await hashPassword(password);
 
-    // Update user password
-    await db.prepare(`
-      UPDATE users SET password_hash = ? WHERE id = ?
-    `).bind(passwordHash, tokenData.user_id).run();
-
-    // Mark token as used
-    await db.prepare(`
-      UPDATE password_reset_tokens SET used = 1 WHERE id = ?
-    `).bind(tokenData.id).run();
-
-    // Delete all sessions for this user (force re-login)
-    await db.prepare(`
-      DELETE FROM sessions WHERE user_id = ?
-    `).bind(tokenData.user_id).run();
+    // Recheck the token inside one transaction, so concurrent/replayed requests cannot reuse it.
+    const validToken = "SELECT 1 FROM password_reset_tokens WHERE id = ? AND used = 0 AND julianday(expires_at) > julianday('now')";
+    const results = await db.batch([
+      db.prepare(`UPDATE users SET password_hash = ? WHERE id = ? AND EXISTS (${validToken})`).bind(passwordHash,tokenData.user_id,tokenData.id),
+      db.prepare(`DELETE FROM sessions WHERE user_id = ? AND EXISTS (${validToken})`).bind(tokenData.user_id,tokenData.id),
+      db.prepare("UPDATE password_reset_tokens SET used = 1 WHERE id = ? AND used = 0 AND julianday(expires_at) > julianday('now')").bind(tokenData.id),
+    ]);
+    if (!results[0].meta.changes) return new Response(JSON.stringify({ error: 'Token non valido o scaduto' }), { status: 400 });
 
     return new Response(JSON.stringify({
       success: true,
