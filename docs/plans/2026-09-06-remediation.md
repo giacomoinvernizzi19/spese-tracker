@@ -109,6 +109,8 @@ Fonti: [Trade Republic Open Banking](https://traderepublic.com/en-de/support?art
 
 ### PR 5 — TypeScript, pipeline e rilascio ripetibile
 
+**Avanzamento:** check web e smoke runtime PASS, pipeline preparata, preflight remoto in sola lettura rileva blocchi reali. Checker completi Astro/Svelte e aggiornamento Wrangler in attesa di autorizzazione dipendenze; Playwright al momento locale MCP. Esito GitHub Actions da verificare sul commit pubblicato.
+
 - Ripristinare tipi Worker/D1/Locals e contratti dei payload. Ridurre `any` nei percorsi modificati; separare la configurazione Capacitor dal controllo web se resta fuori dal rilascio.
 - Aggiungere comandi di check, test e build ripetibili. Verificare gli strumenti già installati prima di proporre nuove dipendenze; richiedere approvazione solo per quelle realmente necessarie.
 - CI GitHub: controllo tipi, test dei servizi, schema nuovo/aggiornamento su fixture e build; smoke Playwright su ambiente isolato, senza credenziali reali.

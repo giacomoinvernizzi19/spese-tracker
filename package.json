@@ -17,7 +17,11 @@
     "cap:open:android": "npx cap open android",
     "cap:build": "npm run build && npx cap sync",
     "test": "node scripts/test.mjs",
-    "db:local": "wrangler d1 migrations apply spese-tracker-db --local"
+    "db:local": "wrangler d1 migrations apply spese-tracker-db --local",
+    "check": "tsc --noEmit --incremental false",
+    "test:d1": "node scripts/test-d1.mjs",
+    "smoke:runtime": "node scripts/smoke-runtime.mjs",
+    "preflight": "node scripts/preflight.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",

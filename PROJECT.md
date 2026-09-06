@@ -194,6 +194,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | Pipeline, check web, preflight e smoke isolato | PASS | Typecheck e runtime PASS; preflight rileva blocchi reali, review finding corretti |
 | 2026-09-06 | Job/worker, reporting/periodi, budget, export paginato | PASS | 19 test, build, scheduled locale e review PASS |
 | 2026-09-06 | Servizio banche, candidati, cifratura, migrazione 0009 | PASS | 16 test, D1, build; finding review corretti e CI PASS. Credenziali/consenso live mancanti |
 | 2026-09-06 | API, import, ricorrenze, auth e template HTML | PASS | Code review e continuous-improvement PASS; 11 test, build e smoke import locali PASS |
@@ -239,3 +240,10 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - `period.ts` e `reporting.ts` condividono date e aggregati categorie, inclusa ownership dei drilldown. Budget usa mese/anno selezionati, dashboard rende non confrontabili gli intervalli arbitrari; grafico etichettato Andamento del periodo.
 - Export tramite `client.ts` e paginazione per ID: nessun tetto totale silenzioso. Test502righe con inserimento concorrente verifica assenza duplicati nel set iniziale.
 - Test19/19, build PASS; evento /__scheduled locale eseguito davvero e stato recurring/cleanup success. Review finding export/titolo corretti e riesame PASS. Produzione invariata.
+
+## Evidenze P2 tooling — 6 settembre 2026
+
+- `npm run check` PASS sul web, escludendo configurazione Capacitor non utilizzata. `smoke:runtime` crea D1 temporaneo e porta dedicata, verifica fetch/auth/cron protetto e scheduled con due job riusciti; PASS.
+- `.github/workflows/check.yml` prepara pipeline da checkout pulito: build, tipi, 19 test, D1 e smoke runtime. Esito remoto da acquisire sul commit pubblicato.
+- `scripts/preflight.mjs` è in sola lettura; prova reale rileva segreti mancanti, schemi non aggiornati e tracking migrazioni assente. Nessuna mutazione remota. Controlla anche sorgenti non tracciati prima di attribuire il build a HEAD.
+- Aggiornamento Wrangler e nuovi checker Astro/Svelte richiesti all'utente, ancora senza risposta; nessuna installazione effettuata. Playwright rimane verifica locale MCP: lo smoke runtime CI non è un browser test.

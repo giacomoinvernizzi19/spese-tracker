@@ -19,3 +19,11 @@ The ordered files in `migrations/` are the schema source of truth. `0001_initial
 Existing dated budgets retain `month` and `year`. New recurring budget limits use NULL `month`/`year` and a monthly/yearly period. The API must prefer a dated assignment for its specific month over a recurring limit; it must not sum the two for the same category.
 
 The original checkout's May 2026 password UI changes were recovered into the implementation worktree. Lockfile normalization is limited to package name/version metadata; unrelated peer flag changes were not copied. No production deployment has been performed by this work.
+
+## Release checks
+
+`npm run check`, `npm test`, `npm run test:d1`, `npm run build` and `npm run smoke:runtime` exercise types, ledger services, real local D1 and the bundled Worker including scheduled events. The web check excludes the unused native Capacitor configuration. The current package set does not include Astro/Svelte full type checkers; approval to add them and update Wrangler was requested separately.
+
+`npm run preflight` requires the personal account's CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN in the process environment. It reads Worker settings, secret names and D1 schema/tracking through Cloudflare's API. A nonzero exit means stop; it performs no deployment or schema/secret write. Never paste credentials in command arguments or commit `.env`/`.dev.vars`. A passing report is one release input, not automatic authorization: the private restore test, migration tracking baseline, bank consent and explicit production approval remain required.
+
+GitHub Actions runs from a clean checkout using the lockfile, builds the app and verifies types, service tests, local D1 and a fresh ephemeral Worker smoke. No Cloudflare/bank credentials are configured in CI. Playwright browser checks remain local via the configured MCP until a project browser-runner dependency is approved; the runtime smoke is not a browser test.
