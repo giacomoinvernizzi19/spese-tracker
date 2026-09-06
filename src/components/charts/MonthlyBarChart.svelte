@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
+  import { requestJson } from '../../lib/client';
+  let requestVersion=0;
+  let loadError='';
   import { Chart, BarElement, CategoryScale, LinearScale, Tooltip, BarController } from 'chart.js';
 
   Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, BarController);
@@ -20,6 +23,7 @@
   // Fetch data from API
   async function fetchData() {
     loading = true;
+    const version=++requestVersion;loadError='';
     try {
       let url: string;
       if (periodFrom && periodTo) {
@@ -29,16 +33,15 @@
         const y = periodYear ?? new Date().getFullYear();
         url = `/api/stats?month=${m}&year=${y}`;
       }
-      const res = await fetch(url);
-      const stats = await res.json();
+      const stats=await requestJson<{monthlyTrend:typeof data}>(url);
+      if(version!==requestVersion)return;
 
       data = stats.monthlyTrend || [];
       updateChart();
     } catch (error) {
-      console.error('Error fetching monthly data:', error);
-      data = [];
+      if(version===requestVersion){loadError='Andamento non disponibile';data = [];updateChart();}
     } finally {
-      loading = false;
+      if(version===requestVersion)loading = false;
     }
   }
 
@@ -116,7 +119,6 @@
   }
 
   onMount(() => {
-    initChart();
     fetchData();
 
     window.addEventListener('refreshStats', handleRefresh);
@@ -130,10 +132,13 @@
     };
   });
 
-  onDestroy(() => {
-    chart?.destroy();
-  });
+  function mountChart(node:HTMLCanvasElement){
+    canvas=node;initChart();updateChart();
+    return {destroy(){chart?.destroy();chart=null;}};
+  }
 </script>
+{#if loadError}<p role="alert" class="text-red-600">{loadError}</p>{/if}
+
 
 <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
   <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>
@@ -151,7 +156,7 @@
     </div>
   {:else}
     <div class="h-48">
-      <canvas bind:this={canvas}></canvas>
+      <canvas use:mountChart></canvas>
     </div>
   {/if}
 </div>

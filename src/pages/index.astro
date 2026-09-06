@@ -130,11 +130,14 @@ import TransactionList from '../components/transactions/TransactionList.svelte';
     return `/api/transactions?from=${from}&to=${to}&limit=5`;
   }
 
+  let statsVersion=0;
   async function loadMonthTotal() {
+    const version=++statsVersion;
     try {
       const res = await fetch(getStatsUrl());
       if(!res.ok)throw new Error('Statistiche non disponibili');
       const stats = await res.json();
+      if(version!==statsVersion)return;
       const monthTotal = stats.totalMonth || 0;
       document.getElementById('monthTotal')!.textContent = `\u20AC ${monthTotal.toFixed(2)}`;
 
@@ -150,14 +153,15 @@ import TransactionList from '../components/transactions/TransactionList.svelte';
       // Update recent transactions
       window.dispatchEvent(new CustomEvent('updateTransactionList', { detail: { url: getTransactionsUrl() } }));
 
-      await loadBudgetProgress(monthTotal);
+      await loadBudgetProgress(monthTotal,version);
     } catch (error) {
+      if(version!==statsVersion)return;
       console.error('Error loading stats:', error);
       document.getElementById('monthTotal')!.textContent = 'Dati non disponibili';
     }
   }
 
-  async function loadBudgetProgress(spent: number) {
+  async function loadBudgetProgress(spent: number,version:number) {
     try {
       document.getElementById('budgetProgress')!.style.width='0%';
       if(activePeriod!=='month' && activePeriod!=='year'){document.getElementById('budgetPercent')!.textContent='Budget non confrontabile con questo intervallo';return;}
@@ -165,6 +169,7 @@ import TransactionList from '../components/transactions/TransactionList.svelte';
       const res = await fetch(`/api/budgets?period=${budgetPeriod}&month=${currentMonth+1}&year=${activePeriod==='year'?new Date().getFullYear():currentYear}`);
       if(!res.ok)throw new Error('Budget non disponibile');
       const budgets = await res.json();
+      if(version!==statsVersion)return;
       const totalBudget = budgets.reduce((sum: number, b: any) => sum + b.amount, 0);
 
       if (totalBudget > 0) {

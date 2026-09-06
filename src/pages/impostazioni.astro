@@ -1,5 +1,6 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
+import RecurringSettings from '../components/RecurringSettings.svelte';
 ---
 
 <AppLayout title="Impostazioni" activeNav="settings">
@@ -67,21 +68,7 @@ import AppLayout from '../layouts/AppLayout.astro';
         </div>
       </div>
 
-      <!-- Recurring Transactions Section -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-          <h2 class="font-bold text-lg dark:text-gray-100">Spese Ricorrenti</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Spese che si ripetono automaticamente</p>
-        </div>
-        <div id="recurringList" class="divide-y divide-gray-200 dark:divide-gray-700">
-          <div class="p-4 text-center text-gray-400 dark:text-gray-500 text-sm">Caricamento...</div>
-        </div>
-        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-          <button id="addRecurringBtn" class="w-full py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-500 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-colors text-sm">
-            + Aggiungi spesa ricorrente
-          </button>
-        </div>
-      </div>
+      <RecurringSettings client:load />
 
       <!-- Danger Zone -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
@@ -290,141 +277,6 @@ import AppLayout from '../layouts/AppLayout.astro';
       alert('Errore durante l\'esportazione');
     }
   });
-
-  // === Recurring Transactions ===
-  let recurringItems: any[] = [];
-  let categories: any[] = [];
-
-  async function loadRecurring() {
-    try {
-      const [recRes, catRes] = await Promise.all([
-        fetch('/api/recurring'),
-        fetch('/api/categories')
-      ]);
-      if (!recRes.ok || !catRes.ok) throw new Error('Caricamento non riuscito');
-      recurringItems = await recRes.json();
-      categories = await catRes.json();
-      renderRecurring();
-    } catch (e) {
-      console.error('Error loading recurring:', e);
-    }
-  }
-
-  function renderRecurring() {
-    const container = document.getElementById('recurringList')!;
-    if (!recurringItems.length) {
-      container.innerHTML = `<div class="p-4 text-center text-gray-400 dark:text-gray-500 text-sm">Nessuna spesa ricorrente</div>`;
-      return;
-    }
-    const freqLabels: Record<string, string> = { monthly: 'Mensile', weekly: 'Settimanale', yearly: 'Annuale' };
-    container.innerHTML = recurringItems.map(r => `
-      <div class="flex items-center justify-between p-4">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">${displayText(r.category_icon || '\u{1F4E6}')}</span>
-          <div>
-            <p class="font-medium dark:text-gray-100">${displayText(r.description || r.category_name || 'Ricorrente')}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400">${displayText(freqLabels[r.frequency] || r.frequency)} &middot; \u20AC${Number(r.amount).toFixed(2)}</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-xs px-2 py-0.5 rounded-full ${r.active ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}">${r.active ? 'Attiva' : 'Disattivata'}</span>
-          <button class="del-recurring text-gray-400 hover:text-red-500 p-1" data-id="${r.id}">\u{1F5D1}\uFE0F</button>
-        </div>
-      </div>
-    `).join('');
-
-    container.querySelectorAll('.del-recurring').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Eliminare questa spesa ricorrente?')) return;
-        const response = await fetch('/api/recurring', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: parseInt((btn as HTMLElement).dataset.id!) })
-        });
-        if (!response.ok) { alert((await response.json()).error || 'Eliminazione non riuscita'); return; }
-        loadRecurring();
-      });
-    });
-  }
-
-  document.getElementById('addRecurringBtn')?.addEventListener('click', () => {
-    const catOptions = categories.map(c => `<option value="${c.id}">${displayText(c.icon)} ${displayText(c.name)}</option>`).join('');
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center';
-    modal.innerHTML = `
-      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 m-4 max-w-md w-full">
-        <h3 class="text-lg font-bold mb-4 dark:text-gray-100">Nuova spesa ricorrente</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Importo</label>
-            <input type="number" id="recAmount" step="0.01" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" placeholder="0.00" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrizione</label>
-            <input type="text" id="recDesc" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" placeholder="Es: Affitto, Netflix..." />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoria</label>
-            <select id="recCategory" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">${catOptions}</select>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Frequenza</label>
-              <select id="recFreq" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                <option value="monthly">Mensile</option>
-                <option value="weekly">Settimanale</option>
-                <option value="yearly">Annuale</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Giorno</label>
-              <input type="number" id="recDay" min="1" max="31" value="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data inizio</label>
-            <input type="date" id="recStart" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
-          </div>
-        </div>
-        <div class="flex gap-3 mt-6">
-          <button id="recCancel" class="flex-1 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Annulla</button>
-          <button id="recSave" class="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Salva</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    (modal.querySelector('#recStart') as HTMLInputElement).value = new Date().toISOString().split('T')[0];
-
-    const frequency = modal.querySelector('#recFreq') as HTMLSelectElement;
-    const day = modal.querySelector('#recDay') as HTMLInputElement;
-    frequency.addEventListener('change', () => { day.min = frequency.value === 'weekly' ? '0' : '1'; day.max = frequency.value === 'weekly' ? '6' : '31'; day.value = '1'; });
-    const note = document.createElement('p'); note.className = 'text-xs text-gray-500'; note.textContent = 'Settimanale: 0 domenica, 1 lunedì, …, 6 sabato. Giorni mensili non presenti: ultimo giorno del mese; 29 febbraio annuale: 28 febbraio negli anni non bisestili.'; day.after(note);
-    modal.querySelector('#recCancel')?.addEventListener('click', () => modal.remove());
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
-    modal.querySelector('#recSave')?.addEventListener('click', async () => {
-      const amount = parseFloat((modal.querySelector('#recAmount') as HTMLInputElement).value);
-      if (!amount) { alert('Inserisci un importo'); return; }
-      const response = await fetch('/api/recurring', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount,
-          description: (modal.querySelector('#recDesc') as HTMLInputElement).value,
-          category_id: parseInt((modal.querySelector('#recCategory') as HTMLSelectElement).value),
-          frequency: (modal.querySelector('#recFreq') as HTMLSelectElement).value,
-          day_of_month: parseInt((modal.querySelector('#recDay') as HTMLInputElement).value),
-          start_date: (modal.querySelector('#recStart') as HTMLInputElement).value,
-        })
-      });
-      const result = await response.json();
-      if (!response.ok) { alert(result.error || 'Salvataggio non riuscito'); return; }
-      if (result.generation_error) alert(result.generation_error);
-      modal.remove();
-      loadRecurring();
-    });
-  });
-
-  loadRecurring();
 
   // Delete all transactions
   document.getElementById('deleteAllBtn')?.addEventListener('click', async () => {

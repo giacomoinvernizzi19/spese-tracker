@@ -122,6 +122,8 @@ Fonti: [Trade Republic Open Banking](https://traderepublic.com/en-de/support?art
 
 ### PR 6 — componenti, stato UI e documentazione coerenti
 
+**Avanzamento:** componenti import/ricorrenze/riepilogo report/review bancaria estratti, endpoint debug rimosso, lifecycle dei due grafici corretto e Playwright desktop/mobile PASS. Documentazione e roadmap aggiornate.
+
 - Estrarre progressivamente le parti interattive di `banche.astro`, `importa.astro`, `impostazioni.astro`, `report.astro` in componenti Svelte. Partire dai punti già toccati da P1/P2; evitare una riscrittura estetica.
 - Riutilizzare caricamento/errori/esiti API e selezione periodo; preservare filtri, navigazione, grafici e comportamento mobile.
 - Rimuovere endpoint di debug datati, codice non usato e duplicazioni solo dopo verifica dei riferimenti.
@@ -152,3 +154,11 @@ Fuori scope: conversioni valutarie, app native, notifiche push, export PDF, rede
 - [GoCardless Bank Account Data overview](https://docs.gocardless.com/docs/bank-account-data): accesso al portale e secret del servizio.
 - [GoCardless quickstart](https://docs.gocardless.com/docs/bank-account-data/quickstart-guide): consenso, requisizioni e durata dell'accesso.
 - [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/): handler `scheduled()` necessario per i trigger.
+
+## Stato di consegna codice — 6 settembre 2026
+
+- PR GitHub #1 piano, #2 baseline, #3 integrità, #4 banche, #5 servizi/job, #6 pipeline; PR #7 P3 componenti/grafici. Le PR sono concatenate e draft, non unite.
+- Pipeline remota PR6 ac59c2f verde (run34047029251). Il numero di test è19; Playwright locale separato dai test CI runtime.
+- Blocchi esterni: nuove credenziali GoCardless da inserire privatamente, configurazione Resend, consenso/prova live Fineco/Revolut, catalogo autenticato Trade Republic.
+- Aggiornamento Wrangler e checker Astro/Svelte richiesti, nessuna installazione senza risposta. Smoke Playwright CI necessita di un runner di progetto; al momento è una verifica locale MCP.
+- Produzione invariata. Per rilasciare: riconciliare tracking storicoD1, preflight, approvazione sul risultato e applicazione migrazioni/deploy, poi consensi/prova live. Non confondere codice pronto con P1 banche operativamente conclusa.

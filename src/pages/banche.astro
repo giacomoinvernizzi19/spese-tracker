@@ -154,10 +154,11 @@ import BankReview from '../components/BankReview.svelte';
   async function loadConnections() {
     try {
       const res = await fetch('/api/bank/accounts');
+      if(!res.ok)throw new Error((await res.json()).error||'Conti non disponibili');
       connections = await res.json();
       renderConnections();
     } catch (error) {
-      console.error('Error loading connections:', error);
+      document.getElementById('accountsList')!.textContent=error instanceof Error?error.message:'Conti non disponibili';
     }
   }
 
@@ -169,7 +170,7 @@ import BankReview from '../components/BankReview.svelte';
         <div class="text-center py-8">
           <div class="text-4xl mb-4">🏦</div>
           <p class="text-gray-500 dark:text-gray-400">Nessun conto collegato</p>
-          <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Collega il tuo conto bancario per importare automaticamente le transazioni</p>
+          <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Collega il tuo conto bancario per verificare e importare i movimenti</p>
         </div>
       `;
       return;

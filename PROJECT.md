@@ -127,7 +127,7 @@ Personal expense tracking app with bank sync, developed for personal use.
 - Edge computing D1 per latenza minima
 - Auto-categorization based on history
 - Excel import for data migration
-- PWA with offline support
+- PWA installabile, cache di soli asset statici; lettura/scrittura spese richiedono rete
 
 ### What Needs Work
 - SVG icons for iOS PWA (needs PNG)
@@ -194,6 +194,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | Componenti Svelte, grafici, report, pulizia debug | PASS | 19 test/check/build e Playwright locali PASS; finding review corretti; CI PASS |
 | 2026-09-06 | Pipeline, check web, preflight e smoke isolato | PASS | Typecheck e runtime PASS; preflight rileva blocchi reali, review finding corretti |
 | 2026-09-06 | Job/worker, reporting/periodi, budget, export paginato | PASS | 19 test, build, scheduled locale e review PASS |
 | 2026-09-06 | Servizio banche, candidati, cifratura, migrazione 0009 | PASS | 16 test, D1, build; finding review corretti e CI PASS. Credenziali/consenso live mancanti |
@@ -247,3 +248,12 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - `.github/workflows/check.yml` prepara pipeline da checkout pulito: build, tipi, 19 test, D1 e smoke runtime. Esito remoto da acquisire sul commit pubblicato.
 - `scripts/preflight.mjs` è in sola lettura; prova reale rileva segreti mancanti, schemi non aggiornati e tracking migrazioni assente. Nessuna mutazione remota. Controlla anche sorgenti non tracciati prima di attribuire il build a HEAD.
 - Aggiornamento Wrangler e nuovi checker Astro/Svelte richiesti all'utente, ancora senza risposta; nessuna installazione effettuata. Playwright rimane verifica locale MCP: lo smoke runtime CI non è un browser test.
+
+## Evidenze P3 UI — 6 settembre 2026
+
+- `ExpenseImport.svelte`, `RecurringSettings.svelte`, `ReportSummary.svelte` e `BankReview.svelte` separano stato/form/esiti dalle pagine. `client.ts` riusa gestione errori HTTP; rendering Svelte evita HTML concatenato nei percorsi estratti. Chart.js e scheletro delle pagine conservati, nessuna riscrittura estetica generale.
+- Debug bancario gennaio2026 senza consumer rimosso. PWA documentata come cache asset, non contabilità offline.
+- Trovato difetto affine nei due grafici dashboard: init prima del montaggio canvas. Azione Svelte gestisce creazione/distruzione insieme al canvas; richieste con versione impediscono risposte vecchie sui nuovi filtri. Grafico categorie non confronta intervalli arbitrari con budget mensile; spese senza categoria contribuiscono al totale del grafico.
+- Playwright locale: import2nuove/1rifiutata, retry0nuove/2duplicate; HTML non eseguito; ricorrenza settimanale domenica salvata e nuovo form vuoto; report aggiornato; 8 percorsi mobile390px senza overflow. Due canvas dashboard verificati con pixel disegnati dopo il fix.
+- Ripristino privato attraverso0010: conteggi/totali e integrità invariati. EXPLAIN usa idx_transactions_user_date; 100 query aggregate circa1ms su SQLite locale, solo misura orientativa non SLA D1. Nessun indice extra giustificato.
+- GitHub Actions PR6 ac59c2f: PASS (run34047029251). Nessun merge, migrazione remota o deploy.
