@@ -4,7 +4,7 @@
 
   Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, BarController);
 
-  export let title = 'Ultimi 6 mesi';
+  export let title = 'Andamento del periodo';
 
   let data: Array<{month: string, amount: number}> = [];
   let canvas: HTMLCanvasElement;

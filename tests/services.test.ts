@@ -1,0 +1,42 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {testDatabase,seedUser,apiContext} from './helpers';
+import {GET as stats} from '../src/pages/api/stats/index';
+import {GET as reports} from '../src/pages/api/reports/index';
+import {runDaily} from '../src/lib/jobs';
+import {GET as transactions} from '../src/pages/api/transactions/index';
+test('dashboard and report share period totals and reject foreign drilldowns',async()=>{
+  const {db,sqlite}=testDatabase();seedUser(sqlite);
+  sqlite.exec("INSERT INTO users(id,email,password_hash,name) VALUES('v','v@example.test','unused','Other');INSERT INTO categories(id,user_id,name) VALUES(2,'v','Private');INSERT INTO transactions(user_id,amount,type,category_id,date) VALUES('u',10,'expense',1,'2026-01-02'),('u',20,'expense',1,'2026-02-02'),('u',30,'expense',1,'2025-12-31')");
+  const dashboard=await (await stats(apiContext(db,'/api/stats?from=2026-01-01&to=2026-12-31'))).json();
+  const report=await (await reports(apiContext(db,'/api/reports?year=2026'))).json();
+  assert.equal(dashboard.totalMonth,30);
+  assert.deepEqual(dashboard.byCategory,report.categories);
+  assert.equal((await stats(apiContext(db,'/api/stats?parentId=2'))).status,400);
+  assert.equal((await reports(apiContext(db,'/api/reports?parentId=2'))).status,400);
+  assert.equal((await stats(apiContext(db,'/api/stats?from=2026-02-30&to=2026-03-01'))).status,400);
+  sqlite.close();
+});
+test('job lease prevents overlapping work and failed recurrence does not prevent cleanup',async()=>{
+  const {db,sqlite}=testDatabase();seedUser(sqlite);
+  sqlite.exec("INSERT INTO job_state(name,lease_token,lease_until,status) VALUES('recurring','other','2099-01-01','running');UPDATE sessions SET expires_at='2000-01-01'");
+  const env={DB:db,APP_URL:'https://example.test'} as WorkerEnv;
+  const busy=await runDaily(env);assert.equal(busy.recurring.status,'busy');assert.equal(busy.cleanup.status,'success');assert.equal(busy.banking.status,'disabled');
+  sqlite.exec("DELETE FROM job_state WHERE name='recurring';INSERT INTO recurring_transactions(user_id,amount,start_date,frequency) VALUES('u',-1,'2026-09-01','monthly')");
+  const failed=await runDaily(env);assert.equal(failed.recurring.status,'failed');assert.equal(failed.cleanup.status,'success');
+  assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM sessions').get()!.n,0);
+  sqlite.close();
+});
+test('transaction export paginates beyond 500 rows without repeating IDs',async()=>{
+  const {db,sqlite}=testDatabase();seedUser(sqlite);
+  const insert=sqlite.prepare("INSERT INTO transactions(user_id,amount,date) VALUES('u',1,'2026-09-06')");
+  for(let i=0;i<502;i++)insert.run();
+  const first=await (await transactions(apiContext(db,'/api/transactions?limit=500&order=id'))).json();
+  assert.equal(first.length,500);
+  insert.run();
+  const second=await (await transactions(apiContext(db,`/api/transactions?limit=500&order=id&before_id=${first.at(-1).id}`))).json();
+  assert.equal(second.length,2);
+  assert.equal(new Set([...first,...second].map(row=>row.id)).size,502);
+  assert.equal((await transactions(apiContext(db,'/api/transactions?limit=-1'))).status,400);
+  sqlite.close();
+});

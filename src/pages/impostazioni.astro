@@ -197,6 +197,7 @@ import AppLayout from '../layouts/AppLayout.astro';
 </AppLayout>
 
 <script>
+  import { exportTransactions } from '../lib/client';
   import { displayText, displayColor, displayImage } from '../lib/display';
   import * as XLSX from 'xlsx';
   import { toggleTheme, isDarkMode } from '../lib/theme';
@@ -260,8 +261,7 @@ import AppLayout from '../layouts/AppLayout.astro';
   // Export to Excel
   document.getElementById('exportBtn')?.addEventListener('click', async () => {
     try {
-      const res = await fetch('/api/transactions?limit=10000');
-      const transactions = await res.json();
+      const transactions = await exportTransactions();
 
       if (!transactions.length) {
         alert('Nessuna spesa da esportare');

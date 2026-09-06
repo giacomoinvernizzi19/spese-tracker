@@ -1,4 +1,5 @@
 import { authenticated, body, json } from '../../../lib/api';
+import { periodFrom } from '../../../lib/period';
 import { InputError, ownedCategory, positiveAmount } from '../../../lib/validation';
 import type { APIRoute } from 'astro';
 import { getAuthUser } from '../../../lib/auth';
@@ -24,9 +25,8 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
 
   try {
     // Get current month/year for spending calculation
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
+    const selected=periodFrom(url.searchParams,period==='yearly');
+    const currentMonth=selected.month,currentYear=selected.year;
 
     // Get all budgets with category info and calculate spent amount
     const budgets = await db.prepare(`
@@ -75,7 +75,8 @@ export const GET: APIRoute = async ({ request, cookies, locals }) => {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Budget GET error:', error);
+    if(error instanceof InputError)return json({error:error.message},error.status);
+    console.error('Budget GET failed');
     return new Response(JSON.stringify({ error: 'Database error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
@@ -88,11 +89,7 @@ export const POST = authenticated(async ({request},db,user) => {
   if(!category) throw new InputError('Categoria obbligatoria');
   const period=input.period ?? 'monthly';
   if(period!=='monthly' && period!=='yearly') throw new InputError('Periodo non valido');
+  await db.prepare('INSERT INTO budgets(user_id,category_id,amount,period) VALUES(?,?,?,?) ON CONFLICT DO UPDATE SET amount=excluded.amount,updated_at=CURRENT_TIMESTAMP').bind(user.id,category,amount,period).run();
   const existing=await db.prepare('SELECT id FROM budgets WHERE user_id=? AND category_id=? AND period=? AND year IS NULL AND month IS NULL').bind(user.id,category,period).first();
-  if(existing){
-    await db.prepare('UPDATE budgets SET amount=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?').bind(amount,existing.id,user.id).run();
-    return json({success:true,id:existing.id,updated:true});
-  }
-  const result=await db.prepare('INSERT INTO budgets(user_id,category_id,amount,period) VALUES(?,?,?,?)').bind(user.id,category,amount,period).run();
-  return json({success:true,id:result.meta.last_row_id},201);
+  return json({success:true,id:existing?.id});
 });

@@ -1,5 +1,5 @@
 {
-	"main": "dist/_worker.js/index.js",
+	"main": "src/worker.ts",
 	"name": "thinkin-about-money",
 	"compatibility_date": "2026-01-04",
 	"compatibility_flags": [
@@ -14,7 +14,8 @@
 		"enabled": true
 	},
 	"vars": {
-		"APP_URL": "https://thinkin-about-money.g-invernizzi-jm.workers.dev"
+		"APP_URL": "https://thinkin-about-money.g-invernizzi-jm.workers.dev",
+        "BANK_SYNC_ENABLED": "false"
 	},
 	"d1_databases": [
 		{

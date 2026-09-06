@@ -9,7 +9,7 @@ test('dated budget overrides recurring limit only in its own month; updating def
   sqlite.prepare("INSERT INTO budgets(user_id,category_id,amount,month,year) VALUES('u',1,100,?,?)").run(now.getMonth()+1,now.getFullYear());
   sqlite.exec("INSERT INTO budgets(user_id,category_id,amount,month,year) VALUES('u',1,80,1,2000)");
   let response = await POST(apiContext(db,'/api/budgets',{category_id:1,amount:200}));
-  assert.equal(response.status,201);
+  assert.equal(response.status,200);
   response = await GET(apiContext(db,'/api/budgets'));
   const budgets = await response.json();
   assert.equal(budgets.length,1); assert.equal(budgets[0].amount,100);

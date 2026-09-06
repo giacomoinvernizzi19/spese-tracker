@@ -194,6 +194,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | Job/worker, reporting/periodi, budget, export paginato | PASS | 19 test, build, scheduled locale e review PASS |
 | 2026-09-06 | Servizio banche, candidati, cifratura, migrazione 0009 | PASS | 16 test, D1, build; finding review corretti e CI PASS. Credenziali/consenso live mancanti |
 | 2026-09-06 | API, import, ricorrenze, auth e template HTML | PASS | Code review e continuous-improvement PASS; 11 test, build e smoke import locali PASS |
 | 2026-09-06 | Migrazioni baseline/ledger, API budget, auth UI, test e runbook | PASS | Code review PASS; CI documentale allineata; 4 test, D1, build, restore backup e Playwright locali PASS. Produzione invariata |
@@ -231,3 +232,10 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - Test 16/16 PASS, D1 migrazioni/rollback PASS, build PASS; Playwright rende candidato sintetico e nessun overflow desktop. Review: finding checkpoint disgiunto e backoff discovery corretti con regressioni; continuous-improvement PASS.
 - La chiave precedente non è necessaria per i record verificati nel backup: sei requisition UUID in chiaro, due liste account JSON in chiaro, quattro liste assenti. Nessuna chiave creata o ruotata da questa sessione.
 - `docs/bank-recovery.md` e `scripts/configure-local-banking.py`: percorso per configurazione privata. Nuove credenziali, catalogo autenticato, consenso Fineco/Revolut e prova live restano in attesa dell'utente. P1 banche non chiusa operativamente.
+
+## Evidenze P2 servizi — 6 settembre 2026
+
+- `src/worker.ts` delega fetch all'adapter Astro e implementa scheduled; `src/lib/jobs.ts` condiviso con cron HTTP. Migrazione0010 registra lease, tentativi, ultimo successo ed errore per job. BANK_SYNC_ENABLED=false finché il percorso live P1 non è provato.
+- `period.ts` e `reporting.ts` condividono date e aggregati categorie, inclusa ownership dei drilldown. Budget usa mese/anno selezionati, dashboard rende non confrontabili gli intervalli arbitrari; grafico etichettato Andamento del periodo.
+- Export tramite `client.ts` e paginazione per ID: nessun tetto totale silenzioso. Test502righe con inserimento concorrente verifica assenza duplicati nel set iniziale.
+- Test19/19, build PASS; evento /__scheduled locale eseguito davvero e stato recurring/cleanup success. Review finding export/titolo corretti e riesame PASS. Produzione invariata.
