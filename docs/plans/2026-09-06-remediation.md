@@ -63,6 +63,8 @@ Precedenti da conservare: `5fda96f` e `8980d48` per auth/cifratura/rate limit; `
 
 ### PR 3 — ripristino Fineco e Revolut, sincronizzazione manuale affidabile
 
+**Avanzamento:** servizio, cifratura, consenso, candidati/review e test locali preparati. Tutti i nuovi movimenti sono proposti per review prima dei totali per evitare sovrapposizioni storiche. Credenziali da rigenerare e consenso/prova live mancanti: ripristino operativo non concluso.
+
 **Scopo:** collegare entrambe le banche e importare EUR con prova reale.
 
 1. Verificare accesso e credenziali dell'account GoCardless esistente, disponibilità effettiva delle due banche e configurazione del Worker. Non chiedere chiavi in chat e non inserirle nella repo.

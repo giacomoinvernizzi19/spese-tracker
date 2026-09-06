@@ -14,7 +14,7 @@ test('legacy upgrade preserves dated budgets and ledger rows, converges with fre
   const db = create(7);
   db.exec("INSERT INTO users(id,email,password_hash,name) VALUES('u','test@example.test','unused','Test'); INSERT INTO categories(id,user_id,name) VALUES(1,'u','Food'); INSERT INTO budgets(user_id,category_id,amount,month,year) VALUES('u',1,100,1,2026),('u',1,150,2,2026); INSERT INTO transactions(user_id,amount,date,description,source) VALUES('u',12.34,'2026-01-01','Example','import');");
   const before = db.prepare('SELECT id,user_id,amount,type,description,category_id,date,created_at,updated_at,source FROM transactions').all();
-  db.exec(sql(migrations[7]));
+  for (const file of migrations.slice(7)) db.exec(sql(file));
   assert.deepEqual(db.prepare('SELECT id,user_id,amount,type,description,category_id,date,created_at,updated_at,source FROM transactions').all(), before);
   assert.deepEqual(db.prepare('SELECT amount,month,year,period FROM budgets ORDER BY month').all().map(r => ({...r})), [{amount:100,month:1,year:2026,period:'monthly'},{amount:150,month:2,year:2026,period:'monthly'}]);
   const schema = (d: DatabaseSync) => d.prepare("SELECT name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name").all();
@@ -37,7 +37,7 @@ test('database rejects duplicate recurring occurrences and import rows', () => {
 test('upgrade preserves deleted high-water IDs in both rebuilt tables', () => {
   const db = create(7);
   db.exec("INSERT INTO users(id,email,password_hash,name) VALUES('u','test@example.test','unused','Test'); INSERT INTO budgets(id,user_id,amount,month,year) VALUES(100,'u',100,1,2026); DELETE FROM budgets; INSERT INTO transactions(id,user_id,amount,date) VALUES(200,'u',1,'2026-01-01'); DELETE FROM transactions;");
-  db.exec(sql(migrations[7]));
+  for (const file of migrations.slice(7)) db.exec(sql(file));
   db.exec("INSERT INTO budgets(user_id,amount) VALUES('u',1); INSERT INTO transactions(user_id,amount,date) VALUES('u',1,'2026-01-01');");
   assert.equal(db.prepare('SELECT id FROM budgets').get()?.id, 101);
   assert.equal(db.prepare('SELECT id FROM transactions').get()?.id, 201);

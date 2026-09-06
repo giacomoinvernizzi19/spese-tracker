@@ -1,5 +1,6 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
+import BankReview from '../components/BankReview.svelte';
 ---
 
 <AppLayout title="Conti Collegati" activeNav="settings">
@@ -108,6 +109,7 @@ import AppLayout from '../layouts/AppLayout.astro';
       </div>
     </div>
   </div>
+  <BankReview client:load />
 </AppLayout>
 
 <script>
@@ -213,7 +215,7 @@ import AppLayout from '../layouts/AppLayout.astro';
         ? new Date(conn.expires_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
         : 'N/A';
 
-      const accountCount = conn.account_ids?.length || 0;
+      const accountCount = conn.sync_accounts?.length || 0;
 
       return `
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
@@ -320,19 +322,14 @@ import AppLayout from '../layouts/AppLayout.astro';
       } else {
         statusEl.className = 'mb-4 p-4 rounded-xl bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200';
 
-        // Build detailed message
-        let msg = `Sincronizzazione completata: ${result.new} nuove transazioni importate`;
-        if (result.duplicates) msg += ` (${result.duplicates} già presenti)`;
-
-        // Add debug info
-        if (result.debug?.accounts?.length) {
-          const acc = result.debug.accounts[0];
-          msg += `\n\nDettagli: Nordigen ha restituito ${result.fetched} transazioni`;
-          if (acc.dateRange) {
-            msg += ` (dal ${acc.dateRange.oldest} al ${acc.dateRange.newest})`;
-          }
-          msg += `\nPeriodo richiesto: dal ${acc.dateFrom}`;
+        let msg = `${result.staged ?? 0} movimenti da verificare, ${result.duplicates ?? 0} già acquisiti, ${result.excluded ?? 0} esclusi perché non EUR.`;
+        if(result.errors?.length) {
+          statusEl.className='mb-4 p-4 rounded-xl bg-amber-100 text-amber-900';
+          msg += '\nSincronizzazione parziale: '+result.errors.join('; ');
         }
+        const notices=result.accounts?.filter(a=>a.notice).map(a=>a.notice) ?? [];
+        if(notices.length)msg+='\n'+notices.join('; ');
+        window.dispatchEvent(new Event('bank-synced'));
 
         statusEl.textContent = msg;
         statusEl.style.whiteSpace = 'pre-line';
@@ -359,12 +356,13 @@ import AppLayout from '../layouts/AppLayout.astro';
     }
 
     try {
-      await fetch('/api/bank/accounts', {
+      const response=await fetch('/api/bank/accounts', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ connection_id: connectionId })
       });
 
+      if(!response.ok)throw new Error('Disconnessione non completata');
       loadConnections();
     } catch (error) {
       alert('Errore nella disconnessione');
