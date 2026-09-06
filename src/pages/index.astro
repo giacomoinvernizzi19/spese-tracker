@@ -64,7 +64,7 @@ import TransactionList from '../components/transactions/TransactionList.svelte';
   <!-- Charts Row - side by side su desktop -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <CategoryPieChart client:load title="Spese per categoria" />
-    <MonthlyBarChart client:load title="Ultimi 6 mesi" />
+    <MonthlyBarChart client:load title="Andamento del periodo" />
   </div>
 
   <!-- Recent Transactions -->
@@ -133,6 +133,7 @@ import TransactionList from '../components/transactions/TransactionList.svelte';
   async function loadMonthTotal() {
     try {
       const res = await fetch(getStatsUrl());
+      if(!res.ok)throw new Error('Statistiche non disponibili');
       const stats = await res.json();
       const monthTotal = stats.totalMonth || 0;
       document.getElementById('monthTotal')!.textContent = `\u20AC ${monthTotal.toFixed(2)}`;
@@ -152,13 +153,17 @@ import TransactionList from '../components/transactions/TransactionList.svelte';
       await loadBudgetProgress(monthTotal);
     } catch (error) {
       console.error('Error loading stats:', error);
-      document.getElementById('monthTotal')!.textContent = '\u20AC 0.00';
+      document.getElementById('monthTotal')!.textContent = 'Dati non disponibili';
     }
   }
 
   async function loadBudgetProgress(spent: number) {
     try {
-      const res = await fetch('/api/budgets');
+      document.getElementById('budgetProgress')!.style.width='0%';
+      if(activePeriod!=='month' && activePeriod!=='year'){document.getElementById('budgetPercent')!.textContent='Budget non confrontabile con questo intervallo';return;}
+      const budgetPeriod=activePeriod==='year'?'yearly':'monthly';
+      const res = await fetch(`/api/budgets?period=${budgetPeriod}&month=${currentMonth+1}&year=${activePeriod==='year'?new Date().getFullYear():currentYear}`);
+      if(!res.ok)throw new Error('Budget non disponibile');
       const budgets = await res.json();
       const totalBudget = budgets.reduce((sum: number, b: any) => sum + b.amount, 0);
 

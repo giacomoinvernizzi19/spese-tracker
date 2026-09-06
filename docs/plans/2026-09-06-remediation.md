@@ -97,6 +97,8 @@ Fonti: [Trade Republic Open Banking](https://traderepublic.com/en-de/support?art
 
 ### PR 4 — servizi condivisi e job verificabili
 
+**Avanzamento:** servizi/job/periodi pronti, 19 test e scheduled locale PASS. Automazione bancaria disabilitata fino a verifica live P1; cron di produzione non ancora pubblicato.
+
 - Collegare un vero handler Cloudflare `scheduled()` ai servizi di ricorrenze, pulizia e sincronizzazione P1.
 - Avviare l'automazione bancaria solo dopo la prova manuale P1; niente sovrapposizioni incontrollate con il pulsante di sync. Gestire retry, timeout e `429` rispettando le indicazioni effettive del provider.
 - Registrare esito e ultima esecuzione riuscita per job/conto, con messaggi utili e privi di dati bancari o segreti. Rendere distinguibili assenza di esecuzione, errore e successo parziale.
