@@ -6,6 +6,7 @@
 - **Stack:** Astro + Svelte + Cloudflare Workers/D1, confermato per il consolidamento.
 - **Status:** piano di consolidamento P1/P2/P3 preparato; implementazione non iniziata. Le marcature storiche "Done" sotto non certificano l'operatività attuale di budget, ricorrenze o bank sync.
 - **Piano corrente:** [Consolidamento P1/P2/P3](docs/plans/2026-09-06-remediation.md). Fineco e Revolut in P1, soltanto EUR; accesso GoCardless confermato dall'utente.
+- **Trade Republic:** interesse aggiuntivo dell'utente; Open Banking documentato, ma assente dai selettori pubblici GoCardless IT/DE verificati il 6 settembre 2026. Verifica del catalogo autenticato inserita nel piano; supporto non confermato, nessuna connessione effettuata.
 - **Rilevato:** schema remoto budget incompatibile con le API; vincolo `source` incompatibile con le ricorrenze; configurazione bancaria/cifratura/email da recuperare; cron senza collegamento `scheduled()` nel sorgente esaminato; typecheck non verde.
 - **Git/deploy:** `main` verificato a `a9778f6`; ultima versione pubblicata rilevata `81db52de` del 14 maggio 2026. Quattro modifiche locali preesistenti nel checkout originale sono da riconciliare separatamente, non incluse nella PR del piano.
 
@@ -192,6 +193,7 @@ cd C:/ClaudeCode/.claude/skills/playwright-skill && node run.js "C:/tmp/playwrig
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | PROJECT.md, docs/plans/2026-09-06-remediation.md | PASS | Nota fattibilità Trade Republic: fonti ufficiali e selettori GoCardless IT/DE verificati, review continuous-improvement; supporto autenticato non ancora confermato |
 | 2026-09-06 | PROJECT.md, ROADMAP.md, docs/plans/2026-09-06-remediation.md | PASS | Review continuous-improvement e link locali/diff verificati; sola pianificazione, nessun codice o dato remoto modificato |
 | 2026-01-17 | manifest.json, package.json, wrangler.jsonc, sw.js, login.astro, registrati.astro, reset-password.astro, recupera-password.astro, AppLayout.astro, impostazioni.astro, forgot-password.ts, CLAUDE.md, PROJECT.md, ROADMAP.md, privacy.astro, capacitor.config.ts | WARN | Rebranding complete. Minor: schema.sql comment still says SpesaTracker |
 | 2026-03-22 | 20+ files (stats API, dashboard, charts, dark mode, recurring, cron, report, privacy, import script) | OK | v1.5 overhaul: search, date range, recurring, cron, dark mode, bank alerts, 1912 txn import, charts period sync, pie chart "Altro" grouping |

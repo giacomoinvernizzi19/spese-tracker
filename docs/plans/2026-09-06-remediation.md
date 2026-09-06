@@ -74,6 +74,19 @@ Precedenti da conservare: `5fda96f` e `8980d48` per auth/cifratura/rate limit; `
 
 **Dipendenze:** PR 1 e garanzie di PR 2 prima di importare dati live. La verifica di accesso/credenziali può iniziare subito. Cambio provider soltanto se il percorso esistente risulta bloccato e dopo decisione esplicita.
 
+### Estensione richiesta: fattibilità Trade Republic
+
+Verifica pubblica del 6 settembre 2026, senza collegare conti o concedere consensi:
+
+- Trade Republic documenta Open Banking per clienti con **conto corrente attivato**: dati del conto, saldo cash e movimenti, inclusi commissioni, interessi e imposte. Il portafoglio titoli, le posizioni e i rendimenti non sono elencati fra questi dati: non considerarli disponibili tramite questa interfaccia senza ulteriore evidenza.
+- Il selettore ufficiale della demo GoCardless, letto con Playwright, contiene 403 istituti per l'Italia e 1.089 per la Germania. Trade Republic non compare in nessuno dei due elenchi; Fineco e Revolut sono presenti nell'elenco italiano.
+- Questo prova l'assenza dai selettori pubblici verificati, non l'impossibilità assoluta di integrazione. Il catalogo autenticato dell'account GoCardless non è ancora stato interrogato: le credenziali Bank Account Data non sono presenti nella configurazione locale verificata.
+- L'accesso diretto PSD2 descritto da Trade Republic è destinato a provider regolamentati e richiede credenziali/certificati TPP; non è un semplice endpoint da usare con login personale del tracker.
+
+**Azione nel blocco P1 banche:** quando si recuperano le credenziali, verificare anche Trade Republic nel catalogo autenticato del provider per paese/tipo di conto pertinente. Se disponibile, riutilizzare il servizio EUR esistente e provare il consenso. Se assente, riportare il blocco esterno e valutare separatamente un altro aggregatore ufficialmente compatibile o un import da estratto conto. Non vincolare la chiusura di Fineco/Revolut a questa estensione e non aggiungere API non ufficiali o scraping del login.
+
+Fonti: [Trade Republic Open Banking](https://traderepublic.com/en-de/support?articleId=488f48ff-8cbc-4832-b1b4-21bcd72cc7b1), [Trade Republic informazioni TPP](https://traderepublic.com/fr-fr/support?articleId=0c5b7d7c-5970-4c6e-88ef-7be7e96c8fbd), [GoCardless selettore Italia](https://bankaccountdata.gocardless.com/demo/aspsp/IT), [GoCardless selettore Germania](https://bankaccountdata.gocardless.com/demo/aspsp/DE).
+
 ## P2 — automazione, contratti e verifiche continue
 
 ### PR 4 — servizi condivisi e job verificabili
