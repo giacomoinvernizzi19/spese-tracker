@@ -109,7 +109,7 @@ Fonti: [Trade Republic Open Banking](https://traderepublic.com/en-de/support?art
 
 ### PR 5 — TypeScript, pipeline e rilascio ripetibile
 
-**Avanzamento:** check web e smoke runtime PASS, pipeline preparata, preflight remoto in sola lettura rileva blocchi reali. Checker completi Astro/Svelte e aggiornamento Wrangler in attesa di autorizzazione dipendenze; Playwright al momento locale MCP. Esito GitHub Actions da verificare sul commit pubblicato.
+**Avanzamento:** check web e smoke runtime PASS, pipeline preparata, preflight remoto in sola lettura rileva blocchi reali. Checker Astro/Svelte e Wrangler aggiornati dopo autorizzazione; check/build/test locali PASS; Playwright al momento locale MCP. Esito GitHub Actions da verificare sul commit pubblicato.
 
 - Ripristinare tipi Worker/D1/Locals e contratti dei payload. Ridurre `any` nei percorsi modificati; separare la configurazione Capacitor dal controllo web se resta fuori dal rilascio.
 - Aggiungere comandi di check, test e build ripetibili. Verificare gli strumenti già installati prima di proporre nuove dipendenze; richiedere approvazione solo per quelle realmente necessarie.
@@ -159,6 +159,6 @@ Fuori scope: conversioni valutarie, app native, notifiche push, export PDF, rede
 
 - PR GitHub #1 piano, #2 baseline, #3 integrità, #4 banche, #5 servizi/job, #6 pipeline; PR #7 P3 componenti/grafici. Le PR sono concatenate e draft, non unite.
 - Pipeline remota PR6 ac59c2f verde (run34047029251). Il numero di test è19; Playwright locale separato dai test CI runtime.
-- Blocchi esterni: nuove credenziali GoCardless da inserire privatamente, configurazione Resend, consenso/prova live Fineco/Revolut, catalogo autenticato Trade Republic.
-- Aggiornamento Wrangler e checker Astro/Svelte richiesti, nessuna installazione senza risposta. Smoke Playwright CI necessita di un runner di progetto; al momento è una verifica locale MCP.
+- Credenziali GoCardless inserite privatamente e autenticazione PASS; catalogo autenticato conferma Fineco/Revolut, Trade Republic assente in IT/DE. Restano configurazione Resend e consenso/prova live Fineco/Revolut.
+- Aggiornamento autorizzato ed eseguito: Wrangler4.115 stabile, check Astro/Svelte senza errori, npm ci e prove runtime PASS. Restano3 warning accessibilità del componente QuickAdd non utilizzato e24 segnalazioni npm audit da analizzare prima del rilascio. Smoke Playwright CI necessita di un runner di progetto; al momento è una verifica locale MCP.
 - Produzione invariata. Per rilasciare: riconciliare tracking storicoD1, preflight, approvazione sul risultato e applicazione migrazioni/deploy, poi consensi/prova live. Non confondere codice pronto con P1 banche operativamente conclusa.

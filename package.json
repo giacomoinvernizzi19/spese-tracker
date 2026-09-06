@@ -18,7 +18,7 @@
     "cap:build": "npm run build && npx cap sync",
     "test": "node scripts/test.mjs",
     "db:local": "wrangler d1 migrations apply spese-tracker-db --local",
-    "check": "tsc --noEmit --incremental false",
+    "check": "astro check && svelte-check --tsconfig ./tsconfig.json",
     "test:d1": "node scripts/test-d1.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "preflight": "node scripts/preflight.mjs"
@@ -30,15 +30,22 @@
     "astro": "^5.16.6",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
+    "entities": "6.0.1",
     "resend": "^6.7.0",
     "svelte": "^5.46.1",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
-    "xlsx": "^0.18.5",
-    "entities": "6.0.1"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@cloudflare/workers-types": "5.20260903.1",
     "@types/bcryptjs": "^2.4.6",
-    "dotenv-cli": "^11.0.0"
+    "dotenv-cli": "^11.0.0",
+    "svelte-check": "4.7.6",
+    "wrangler": "4.115.0"
+  },
+  "overrides": {
+    "wrangler": "$wrangler"
   }
 }

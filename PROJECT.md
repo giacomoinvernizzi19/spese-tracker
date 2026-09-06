@@ -4,9 +4,9 @@
 
 - **What:** gestione spese personali, import Excel e integrazione bancaria.
 - **Stack:** Astro + Svelte + Cloudflare Workers/D1, confermato per il consolidamento.
-- **Status:** P1 in esecuzione; baseline e migrazione preparate e verificate localmente, nessuna migrazione remota o pubblicazione applicativa. Le marcature storiche "Done" sotto non certificano l'operatività attuale di budget, ricorrenze o bank sync.
+- **Status:** Codice P1/P2/P3 preparato nelle PR draft; tooling aggiornato e verificato localmente. Credenziali GoCardless nuove salvate privatamente e autenticazione verificata; consenso bancario, migrazioni remote e pubblicazione ancora da eseguire. Le marcature storiche "Done" sotto non certificano l'operatività attuale di budget, ricorrenze o bank sync.
 - **Piano corrente:** [Consolidamento P1/P2/P3](docs/plans/2026-09-06-remediation.md). Fineco e Revolut in P1, soltanto EUR; accesso GoCardless confermato dall'utente.
-- **Trade Republic:** interesse aggiuntivo dell'utente; Open Banking documentato, ma assente dai selettori pubblici GoCardless IT/DE verificati il 6 settembre 2026. Verifica del catalogo autenticato inserita nel piano; supporto non confermato, nessuna connessione effettuata.
+- **Trade Republic:** interesse aggiuntivo dell'utente; Open Banking documentato, ma assente dai selettori pubblici GoCardless IT/DE verificati il 6 settembre 2026. Assente anche dal catalogo autenticato IT/DE verificato con le nuove credenziali; nessuna connessione effettuata.
 - **Rilevato:** schema remoto budget incompatibile con le API; vincolo `source` incompatibile con le ricorrenze; configurazione bancaria/cifratura/email da recuperare; cron senza collegamento `scheduled()` nel sorgente esaminato; typecheck non verde.
 - **Git/deploy:** `main` verificato a `a9778f6`; ultima versione pubblicata rilevata `81db52de` del 14 maggio 2026. Quattro modifiche locali preesistenti nel checkout originale sono da riconciliare separatamente, non incluse nella PR del piano.
 
@@ -27,7 +27,7 @@
 
 - `npm run dev`: sviluppo locale.
 - `npm run build`: build applicazione.
-- `./node_modules/.bin/tsc --noEmit --incremental false`: controllo tipi, fallisce nella baseline verificata; il piano prevede di ripristinarlo.
+- `npm run check`: Astro check e svelte-check; copre pagine, componenti e TypeScript. Zero errori; tre avvisi accessibilità nel componente QuickAdd non utilizzato.
 - `npm run deploy`: pubblicazione, da eseguire solo dopo verifica e approvazione del rilascio.
 - `npm test`: test automatici schema e API budget; `node scripts/test-d1.mjs`: vincoli e rollback nel runtime D1. Test di baseline introdotti il 6 settembre 2026. Browser test tramite Playwright MCP configurato per il workspace.
 
@@ -194,6 +194,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-06 | Dipendenze, checker Astro/Svelte, smoke isolato, tipi banca e tooltip | WARN | Review senza blocchi; verifiche locali PASS; avvisi accessibilità e audit dipendenze documentati |
 | 2026-09-06 | Componenti Svelte, grafici, report, pulizia debug | PASS | 19 test/check/build e Playwright locali PASS; finding review corretti; CI PASS |
 | 2026-09-06 | Pipeline, check web, preflight e smoke isolato | PASS | Typecheck e runtime PASS; preflight rileva blocchi reali, review finding corretti |
 | 2026-09-06 | Job/worker, reporting/periodi, budget, export paginato | PASS | 19 test, build, scheduled locale e review PASS |
@@ -207,7 +208,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 ---
 
-**Last updated:** 2026-09-06 (P1 baseline verificata localmente; produzione invariata)
+**Last updated:** 2026-09-06 (tooling e nuove credenziali verificati; produzione invariata)
 
 ## Evidenze P1 baseline — 6 settembre 2026
 
@@ -257,3 +258,14 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - Playwright locale: import2nuove/1rifiutata, retry0nuove/2duplicate; HTML non eseguito; ricorrenza settimanale domenica salvata e nuovo form vuoto; report aggiornato; 8 percorsi mobile390px senza overflow. Due canvas dashboard verificati con pixel disegnati dopo il fix.
 - Ripristino privato attraverso0010: conteggi/totali e integrità invariati. EXPLAIN usa idx_transactions_user_date; 100 query aggregate circa1ms su SQLite locale, solo misura orientativa non SLA D1. Nessun indice extra giustificato.
 - GitHub Actions PR6 ac59c2f: PASS (run34047029251). Nessun merge, migrazione remota o deploy.
+
+## Aggiornamento tooling e credenziali — 6 settembre 2026
+
+- Autorizzato dall'utente l'aggiornamento strumenti. Wrangler4.115.0, @astrojs/check0.9.10, svelte-check4.7.6 e tipi Cloudflare5.20260903.1 dichiarati esplicitamente; lockfile verificato con npm ci. node_modules della worktree ora indipendente dal checkout originale.
+- Decisione: override Wrangler anche per l'adapter Astro12, già vincolato a4.50.0, per usare lo stesso runtime in build/dev/test. Scelta4.115 con Miniflare4.20260722.1 stabile:4.129 introduce Miniflare5-alpha con API diverse. I tipi Cloudflare espliciti evitano la dipendenza dal modo in cui npm colloca i pacchetti transitivi; non vengono aggiunti globali Worker al DOM. Precedente: PR6/ac59c2f.
+- Corrette le annotazioni della pagina banche e il tooltip con valore nullo. Ricerca affine: unico parsed.y.toFixed nel progetto. Nessuna modifica al flusso di consenso.
+- Smoke su D1 temporaneo usa un file env vuoto salvo BANK_SYNC_ENABLED=false e non carica .dev.vars: le credenziali personali non entrano nelle prove.
+- npm ci, check (zero errori),19 test, build, test D1 e smoke runtime PASS. Playwright locale: conto sintetico e badge Collegato renderizzati. Pipeline remota da verificare sul nuovo commit.
+- Restano tre warning accessibilità in QuickAdd, privo di consumer, e nove hint Astro. npm audit segnala24 dipendenze vulnerabili (14high,8moderate,2low), incluse dipendenze applicative preesistenti Astro/XLSX: questo aggiornamento non certifica la chiusura della sicurezza. Analizzare esposizione e aggiornamenti separatamente prima del rilascio; non eseguito audit fix --force.
+- Nuove credenziali GoCardless create e salvate dall'utente in .dev.vars privato e nel gestore password. Autenticazione reale PASS; Fineco e Revolut presenti nel catalogo IT, Trade Republic assente in IT/DE. Non committare segreti; nessun consenso o dato bancario scaricato. ENCRYPTION_KEY è locale e deve essere conservata prima del rilascio.
+- Produzione invariata. Restano migrazioni/tracking D1, configurazione segreti sul Worker (incluso Resend), autorizzazione al rilascio e prova manuale con consenso delle banche.

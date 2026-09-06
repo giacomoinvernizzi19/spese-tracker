@@ -113,7 +113,8 @@ import BankReview from '../components/BankReview.svelte';
 </AppLayout>
 
 <script>
-  import { displayText, displayColor, displayImage } from '../lib/display';
+  import { displayText, displayImage } from '../lib/display';
+  import type { AccountSyncResult } from '../lib/bank';
   let institutions: any[] = [];
   let connections: any[] = [];
 
@@ -201,12 +202,13 @@ import BankReview from '../components/BankReview.svelte';
     }
 
     container.innerHTML = alertsHtml + connections.map(conn => {
-      const statusBadge = {
+      const statusBadges: Record<string, string> = {
         'linked': '<span class="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Collegato</span>',
         'pending': '<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">In attesa</span>',
         'expired': '<span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Scaduto</span>',
         'error': '<span class="px-2 py-1 text-xs rounded-full bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">Errore</span>'
-      }[conn.status] || '';
+      };
+      const statusBadge = statusBadges[conn.status] || '';
 
       const lastSync = conn.last_sync_at
         ? new Date(conn.last_sync_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -328,7 +330,8 @@ import BankReview from '../components/BankReview.svelte';
           statusEl.className='mb-4 p-4 rounded-xl bg-amber-100 text-amber-900';
           msg += '\nSincronizzazione parziale: '+result.errors.join('; ');
         }
-        const notices=result.accounts?.filter(a=>a.notice).map(a=>a.notice) ?? [];
+        const accounts: AccountSyncResult[] = result.accounts ?? [];
+        const notices=accounts.filter(a=>a.notice).map(a=>a.notice);
         if(notices.length)msg+='\n'+notices.join('; ');
         window.dispatchEvent(new Event('bank-synced'));
 

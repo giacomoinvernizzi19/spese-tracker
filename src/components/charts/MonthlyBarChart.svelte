@@ -77,7 +77,7 @@
           },
           tooltip: {
             callbacks: {
-              label: (context) => ` € ${context.parsed.y.toFixed(2)}`
+              label: (context) => context.parsed.y === null ? 'Dato non disponibile' : ` € ${context.parsed.y.toFixed(2)}`
             }
           }
         },

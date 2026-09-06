@@ -1,5 +1,5 @@
 import {spawn,execFileSync} from 'node:child_process';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import assert from 'node:assert/strict';
@@ -11,9 +11,11 @@ await new Promise(resolve=>reservation.close(resolve));
 const origin=`http://localhost:${port}`;
 const state=mkdtempSync(join(tmpdir(),'thinkin-smoke-'));
 const cli=join(process.cwd(),'node_modules/.bin/wrangler');
-const env={...process.env,WRANGLER_SEND_METRICS:'false'};
+const secretsFile=join(state,'smoke.env');
+writeFileSync(secretsFile,'BANK_SYNC_ENABLED=false\n');
+const env={...process.env,WRANGLER_SEND_METRICS:'false',CLOUDFLARE_INCLUDE_PROCESS_ENV:'false'};
 execFileSync(cli,['d1','migrations','apply','spese-tracker-db','--local','--persist-to',state],{env,stdio:'pipe'});
-const server=spawn(cli,['dev','--local','--port',String(port),'--test-scheduled','--persist-to',state],{env,stdio:'pipe'});
+const server=spawn(cli,['dev','--local','--env-file',secretsFile,'--var','BANK_SYNC_ENABLED:false','--port',String(port),'--test-scheduled','--persist-to',state],{env,stdio:'pipe'});
 let output='';server.stdout.on('data',chunk=>{output+=chunk;});server.stderr.on('data',chunk=>{output+=chunk;});
 try{
   let ready=false;
