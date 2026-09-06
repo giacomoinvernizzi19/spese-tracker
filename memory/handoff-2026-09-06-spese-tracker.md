@@ -18,3 +18,7 @@ User authorized execution P1/P2/P3 plan, banking restoration P1 EUR only; creden
 - Continue P2 jobs/scheduled/period/types/CI and P3 component extraction per docs/plans/2026-09-06-remediation.md.
 - User must enter regenerated GoCardless credentials securely; no secrets in chat. Provider catalogue (TR included), real consent/import/Resend remain externally blocked.
 - Prepare production migration tracking baseline and exact deploy preflight; explicit approval after review, no merge/deploy yet.
+
+## Aggiornamento 17:07 UTC
+
+PR4 banking68f8571,PR5services9eed05b,PR6toolingac59c2f pubblicate. CIremotaPR6PASS. Currentbranchcodex/spese-tracker-p3-ui,componenti/grafici/documentazione inreviewfinale. Localserver8791session58317,DBthrough0010. Ultimi19test/build/checkPASS; Playwrightimportretry/recurringSunday/report/mobile8pathsPASS. TwochartcanvasinitbugfixedviaSvelteaction,paintedpixelsverified. Privatebackuprestorethrough0010counts/totals/integrityPASS. Userstillneedssecrets via configure-local-banking.py; pendingasyncapprovalWrangler/astrocheck/sveltecheck. No installation, no productionwrite.

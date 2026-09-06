@@ -12,6 +12,9 @@ test('dashboard and report share period totals and reject foreign drilldowns',as
   const report=await (await reports(apiContext(db,'/api/reports?year=2026'))).json();
   assert.equal(dashboard.totalMonth,30);
   assert.deepEqual(dashboard.byCategory,report.categories);
+  sqlite.exec("INSERT INTO transactions(user_id,amount,type,date) VALUES('u',5,'expense','2026-01-03')");
+  const withUnassigned=await (await stats(apiContext(db,'/api/stats?from=2026-01-01&to=2026-12-31'))).json();
+  assert.equal(withUnassigned.byCategory.reduce((total:number,row:{amount:number})=>total+row.amount,0),withUnassigned.totalMonth);
   assert.equal((await stats(apiContext(db,'/api/stats?parentId=2'))).status,400);
   assert.equal((await reports(apiContext(db,'/api/reports?parentId=2'))).status,400);
   assert.equal((await stats(apiContext(db,'/api/stats?from=2026-02-30&to=2026-03-01'))).status,400);

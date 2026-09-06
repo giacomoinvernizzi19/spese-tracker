@@ -1,8 +1,10 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
+import ReportSummary from '../components/ReportSummary.svelte';
 ---
 
 <AppLayout title="Report" activeNav="report">
+  <p id="reportError" role="alert" class="text-red-600 mb-3"></p>
   <!-- Year Selector -->
   <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm mb-6">
     <div class="flex items-center justify-between">
@@ -13,25 +15,7 @@ import AppLayout from '../layouts/AppLayout.astro';
     </div>
   </div>
 
-  <!-- Summary Cards -->
-  <div id="section-summary" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-      <p class="text-gray-500 dark:text-gray-400 text-sm">Totale Spese</p>
-      <p id="totalExpenses" class="text-2xl font-bold text-red-600 dark:text-red-400">-</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-      <p class="text-gray-500 dark:text-gray-400 text-sm">Totale Entrate</p>
-      <p id="totalIncome" class="text-2xl font-bold text-green-600 dark:text-green-400">-</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-      <p class="text-gray-500 dark:text-gray-400 text-sm">Media Mensile</p>
-      <p id="monthlyAvg" class="text-2xl font-bold text-gray-800 dark:text-gray-100">-</p>
-    </div>
-    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-      <p class="text-gray-500 dark:text-gray-400 text-sm">vs Anno Prec.</p>
-      <p id="yearDiff" class="text-2xl font-bold">-</p>
-    </div>
-  </div>
+  <ReportSummary client:load />
 
   <!-- Charts Row 1 -->
   <div class="grid lg:grid-cols-2 gap-6 mb-6">
@@ -138,6 +122,10 @@ import AppLayout from '../layouts/AppLayout.astro';
 </AppLayout>
 
 <script>
+  import { reportSummary } from '../lib/report-summary';
+  import { requestJson } from '../lib/client';
+  let reportVersion=0,categoryVersion=0;
+  let reportLoading=false;
   import { displayText, displayColor, displayImage } from '../lib/display';
   import Chart from 'chart.js/auto';
 
@@ -194,21 +182,13 @@ import AppLayout from '../layouts/AppLayout.astro';
 
   async function loadReport(year?: string) {
     const url = year ? `/api/reports?year=${year}` : '/api/reports';
-    const res = await fetch(url);
-    const data = await res.json();
-
-    // Check errori API
-    if (data.error) {
-      console.error('API Error:', data.error);
-      const currentYear = new Date().getFullYear().toString();
-      yearSelect.innerHTML = `<option value="${currentYear}">${currentYear}</option>`;
-      // Reset UI elements per mostrare stato vuoto
-      document.getElementById('totalExpenses')!.textContent = '-';
-      document.getElementById('totalIncome')!.textContent = '-';
-      document.getElementById('monthlyAvg')!.textContent = '-';
-      document.getElementById('yearDiff')!.textContent = '-';
-      return;
-    }
+    const version=++reportVersion;
+    categoryVersion++;reportLoading=true;
+    let data;
+    try {data=await requestJson<any>(url);}catch(error){if(version===reportVersion){reportLoading=false;reportSummary.set(null);document.getElementById('reportError')!.textContent=error instanceof Error?error.message:'Report non disponibile';}return;}
+    if(version!==reportVersion)return;
+    reportLoading=false;categoryParentId=null;categoryParentName=null;categoryParentIcon=null;
+    document.getElementById('reportError')!.textContent='';
 
     // Populate year selector
     if (data.availableYears?.length) {
@@ -235,28 +215,9 @@ import AppLayout from '../layouts/AppLayout.astro';
     const totalIncome = data.monthly?.reduce((sum: number, m: any) => sum + (m.income || 0), 0) || 0;
     const monthlyAvg = data.monthly?.length ? totalExpenses / data.monthly.length : 0;
 
-    document.getElementById('totalExpenses')!.textContent = `€${totalExpenses.toFixed(2)}`;
-    document.getElementById('totalIncome')!.textContent = `€${totalIncome.toFixed(2)}`;
-    document.getElementById('monthlyAvg')!.textContent = `€${monthlyAvg.toFixed(2)}`;
-
-    // Year comparison
-    const currentYearData = data.yearComparison?.find((y: any) => y.year === data.year);
-    const prevYearData = data.yearComparison?.find((y: any) => y.year !== data.year);
-
-    if (currentYearData && prevYearData && prevYearData.expenses > 0) {
-      const diff = currentYearData.expenses - prevYearData.expenses;
-      const diffPercent = ((diff / prevYearData.expenses) * 100).toFixed(1);
-      const diffEl = document.getElementById('yearDiff')!;
-      if (diff > 0) {
-        diffEl.textContent = `+${diffPercent}%`;
-        diffEl.className = 'text-2xl font-bold text-red-600';
-      } else {
-        diffEl.textContent = `${diffPercent}%`;
-        diffEl.className = 'text-2xl font-bold text-green-600';
-      }
-    } else {
-      document.getElementById('yearDiff')!.textContent = '-';
-    }
+    const currentYearData=data.yearComparison?.find((row:any)=>row.year===data.year);
+    const previous=data.yearComparison?.find((row:any)=>row.year!==data.year);
+    reportSummary.set({expenses:totalExpenses,income:totalIncome,monthlyAverage:monthlyAvg,difference:currentYearData&&previous?.expenses>0?((currentYearData.expenses-previous.expenses)/previous.expenses)*100:null});
 
     // Monthly Chart
     if (monthlyChart) monthlyChart.destroy();
@@ -540,12 +501,15 @@ import AppLayout from '../layouts/AppLayout.astro';
 
   // Load category data with optional parentId
   async function loadCategoryData(year: string) {
+    if(reportLoading)return;
     let url = `/api/reports?year=${year}`;
     if (categoryParentId) {
       url += `&parentId=${categoryParentId}`;
     }
-    const res = await fetch(url);
-    const data = await res.json();
+    const version=++categoryVersion,reportGeneration=reportVersion;
+    let data;
+    try{data=await requestJson<any>(url);}catch(error){if(version===categoryVersion && reportGeneration===reportVersion)document.getElementById('reportError')!.textContent=error instanceof Error?error.message:'Categorie non disponibili';return;}
+    if(version!==categoryVersion || reportGeneration!==reportVersion)return;
 
     // Update only the category chart
     if (categoryChart) categoryChart.destroy();

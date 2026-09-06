@@ -6,13 +6,13 @@ La roadmap operativa è il [piano di consolidamento P1/P2/P3](docs/plans/2026-09
 
 | Priorità | Obiettivo | Stato |
 |----------|-----------|-------|
-| P1 | Schema coerente, salvataggi sicuri, import/ricorrenze affidabili e ripristino Fineco/Revolut solo EUR | Pianificato |
-| P2 | Cron effettivo, servizi condivisi, typecheck/test/CI e rilascio ripetibile | Pianificato, dipende da P1 |
-| P3 | Componenti UI, rimozione residui e documentazione coerente | Pianificato, dopo le garanzie P1/P2 |
+| P1 | Schema coerente, salvataggi sicuri, import/ricorrenze affidabili e ripristino Fineco/Revolut solo EUR | Codice pronto in PR2–4; credenziali/consenso e prova live mancanti |
+| P2 | Cron effettivo, servizi condivisi, typecheck/test/CI e rilascio ripetibile | Servizi/pipeline PR5–6, Actions verde; checker aggiuntivi in attesa |
+| P3 | Componenti UI, rimozione residui e documentazione coerente | Componenti e pulizia verificati localmente, PR7 |
 
 Il piano non introduce nuove funzionalità native, multivaluta o un cambio di provider. Nessun fix è stato applicato con la PR di pianificazione.
 
-## Current Status (Completed)
+## Funzioni storiche — lo stato operativo corrente è sopra
 
 | Feature | Status |
 |---------|--------|
@@ -20,7 +20,7 @@ Il piano non introduce nuove funzionalità native, multivaluta o un cambio di pr
 | Charts & Statistics | Done |
 | Import Excel | Done |
 | Budget per category | Done |
-| Bank Sync (Nordigen) | Done |
+| Bank Sync (Nordigen) | Storico; ripristino operativo in corso |
 | Security Hardening | Done |
 | PWA base | Done |
 | Rebranding | Done |
@@ -35,7 +35,7 @@ Il piano non introduce nuove funzionalità native, multivaluta o un cambio di pr
 | Text search | Done | Server-side LIKE filter on descriptions |
 | Custom date range | Done | From/to date params + dashboard presets (month/3mo/year/custom) |
 | Recurring transactions | Done | Monthly/weekly/yearly auto-generation with management UI |
-| Cron auto-sync | Done | Daily at 06:00 UTC - recurring generation + session cleanup |
+| Cron auto-sync | Storico non provato; handler preparato in PR5 | Ricorrenze/pulizia locali verificate; pubblicazione ancora da approvare |
 | Dark mode complete | Done | All pages and components with dark: classes |
 | Bank connection expiry alert | Done | Yellow/red banners based on days until expiry |
 | Charts sync with period selector | Done | CategoryPieChart + MonthlyBarChart react to periodChanged event |
@@ -52,18 +52,16 @@ These are ideas to consider if/when needed. No commitment.
 |---------|-------------|
 | PNG icons for PWA | 192x192, 512x512 for iOS/Android |
 | Export PDF with charts | Visual report export |
-| Excel vs Bank deduplication | Match by date+amount+description |
+| Riconciliazione Excel/banca | Candidati con conferma esplicita; somiglianza non prova unicità |
 | Push notifications | Budget alerts via web push |
 
 ---
 
 ## Notes
 
-- Nordigen rate limit: 10 requests/day per scope per account
-- OAuth expires after 90 days - UI shows expiry + alert banners
-- Cron secret needed: `wrangler secret put CRON_SECRET`
-- D1 does not enforce CHECK constraints added after table creation
+- Durata e disponibilità storica dipendono dai termini del consenso del provider, verificati dal codice.
+- Backoff 429 persistito per conto; nessun numero fisso di chiamate garantito.
+- Cron HTTP richiede CRON_SECRET; scheduled usa i servizi interni. BANK_SYNC_ENABLED=false finché manca la prova live.
+- PWA: installazione e cache di asset; operazioni sulle spese richiedono rete.
 
----
-
-*Last updated: 6 settembre 2026 — piano di consolidamento; storico precedente conservato.*
+*Last updated: 6 settembre 2026 — implementazione nelle PR, nessun deploy.*

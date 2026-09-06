@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
+  import { requestJson } from '../../lib/client';
+  let requestVersion=0;
+  let loadError='';
   import { Chart, ArcElement, Tooltip, Legend, DoughnutController } from 'chart.js';
 
   Chart.register(ArcElement, Tooltip, Legend, DoughnutController);
@@ -26,6 +29,8 @@
   // Fetch data from API
   async function fetchData() {
     loading = true;
+    const version=++requestVersion;
+    loadError='';
     try {
       let url: string;
       if (periodFrom && periodTo) {
@@ -39,14 +44,12 @@
         url += `&parentId=${parentId}`;
       }
 
-      // Fetch stats and budgets in parallel
-      const [statsRes, budgetsRes] = await Promise.all([
-        fetch(url),
-        fetch('/api/budgets')
+      const budgetUrl=periodFrom&&periodTo?null:`/api/budgets?month=${month??new Date().getMonth()+1}&year=${year??new Date().getFullYear()}`;
+      const [stats,budgetList]=await Promise.all([
+        requestJson<any>(url),
+        budgetUrl?requestJson<any[]>(budgetUrl):Promise.resolve([])
       ]);
-
-      const stats = await statsRes.json();
-      const budgetList = await budgetsRes.json();
+      if(version!==requestVersion)return;
 
       // Build budgets map
       budgets = new Map(budgetList.map((b: any) => [b.category_id.toString(), b.amount]));
@@ -63,10 +66,9 @@
 
       // Chart update happens via reactive $: displayData block
     } catch (error) {
-      console.error('Error fetching category data:', error);
-      data = [];
+      if(version===requestVersion){loadError='Categorie non disponibili';data = [];}
     } finally {
-      loading = false;
+      if(version===requestVersion)loading = false;
     }
   }
 
@@ -159,7 +161,6 @@
   }
 
   onMount(() => {
-    initChart();
     fetchData();
 
     window.addEventListener('refreshStats', handleRefresh);
@@ -173,9 +174,10 @@
     };
   });
 
-  onDestroy(() => {
-    chart?.destroy();
-  });
+  function mountChart(node:HTMLCanvasElement){
+    canvas=node;initChart();updateChart();
+    return {destroy(){chart?.destroy();chart=null;}};
+  }
 
   // Group small categories into "Altro" (< 3% of total)
   const ALTRO_THRESHOLD = 0.03;
@@ -204,6 +206,8 @@
     updateChart();
   }
 </script>
+{#if loadError}<p role="alert" class="text-red-600">{loadError}</p>{/if}
+
 
 <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
   <!-- Header con breadcrumb -->
@@ -232,7 +236,7 @@
     </div>
   {:else}
     <div class="relative h-48 mb-4">
-      <canvas bind:this={canvas}></canvas>
+      <canvas use:mountChart></canvas>
       <!-- Totale al centro -->
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div class="text-center">
