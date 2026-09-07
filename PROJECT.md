@@ -14,6 +14,9 @@
 
 | File | Purpose |
 |------|---------|
+| `docs/security-2026-09-07.md` | Valutazione advisory, eccezioni e sequenza concreta di rilascio |
+| `scripts/prepare-database-upgrade.py` | Confronto schema offline, prova preservazione e SQL baseline |
+| `src/lib/worker-boundary.ts`, `scripts/astro-security.mjs` | Manutenzione API/job e limiti delle funzionalità framework verificate |
 | `docs/database-upgrade.md` | Procedura di upgrade, preservazione e tracking migrazioni |
 | `migrations/0001_initial.sql`, `migrations/0008_ledger_integrity.sql` | Baseline ordinata e migrazione ledger/budget |
 | `scripts/test.mjs`, `scripts/test-d1.mjs`, `tests/` | Test con Node/esbuild e runtime D1 locale |
@@ -27,7 +30,7 @@
 
 - `npm run dev`: sviluppo locale.
 - `npm run build`: build applicazione.
-- `npm run check`: Astro check e svelte-check; copre pagine, componenti e TypeScript. Zero errori; tre avvisi accessibilità nel componente QuickAdd non utilizzato.
+- `npm run check`: Astro check e svelte-check; copre pagine, componenti e TypeScript. Zero errori; quattro avvisi accessibilità nei componenti QuickAdd e TransactionList.
 - `npm run deploy`: pubblicazione, da eseguire solo dopo verifica e approvazione del rilascio.
 - `npm test`: test automatici schema e API budget; `node scripts/test-d1.mjs`: vincoli e rollback nel runtime D1. Test di baseline introdotti il 6 settembre 2026. Browser test tramite Playwright MCP configurato per il workspace.
 
@@ -194,6 +197,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-07 | Dipendenze, manutenzione, guard Astro, preparatore migrazioni | PASS | 24 test/check/build/D1/smoke e browser PASS; 4 advisory residue motivate; review senza blocchi |
 | 2026-09-06 | Dipendenze, checker Astro/Svelte, smoke isolato, tipi banca e tooltip | WARN | Review senza blocchi; verifiche locali PASS; avvisi accessibilità e audit dipendenze documentati |
 | 2026-09-06 | Componenti Svelte, grafici, report, pulizia debug | PASS | 19 test/check/build e Playwright locali PASS; finding review corretti; CI PASS |
 | 2026-09-06 | Pipeline, check web, preflight e smoke isolato | PASS | Typecheck e runtime PASS; preflight rileva blocchi reali, review finding corretti |
@@ -208,7 +212,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 ---
 
-**Last updated:** 2026-09-06 (tooling e nuove credenziali verificati; produzione invariata)
+**Last updated:** 2026-09-07 (sicurezza e preparazione rilascio verificate; produzione invariata)
 
 ## Evidenze P1 baseline — 6 settembre 2026
 
@@ -269,3 +273,13 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - Restano tre warning accessibilità in QuickAdd, privo di consumer, e nove hint Astro. npm audit segnala24 dipendenze vulnerabili (14high,8moderate,2low), incluse dipendenze applicative preesistenti Astro/XLSX: questo aggiornamento non certifica la chiusura della sicurezza. Analizzare esposizione e aggiornamenti separatamente prima del rilascio; non eseguito audit fix --force.
 - Nuove credenziali GoCardless create e salvate dall'utente in .dev.vars privato e nel gestore password. Autenticazione reale PASS; Fineco e Revolut presenti nel catalogo IT, Trade Republic assente in IT/DE. Non committare segreti; nessun consenso o dato bancario scaricato. ENCRYPTION_KEY è locale e deve essere conservata prima del rilascio.
 - Produzione invariata. Restano migrazioni/tracking D1, configurazione segreti sul Worker (incluso Resend), autorizzazione al rilascio e prova manuale con consenso delle banche.
+
+## Sicurezza e preparazione rilascio — 7 settembre 2026
+
+- Dettagli e fonti in `docs/security-2026-09-07.md`. Audit24→4 package nodes (2high,2low), non audit zero. SheetJS0.20.3 ufficiale, Svelte/Resend e dipendenze compatibili aggiornati. Wrangler stabile conservato; Undici7.29.0 ed esbuild0.28.1 correggono dipendenze transitive. Test/compiler/types espliciti per non dipendere da hoisting.
+- Decisione: mantenere Astro5.18.2 per questo rilascio con eccezioni motivate sui percorsi assenti e un guard delle feature dirette; l'upgrade major resta manutenzione separata. `/_image` e `/_server-islands` disabilitati prima della delega, servizio immagini passthrough; guard AST su define:vars, spread, slot dinamici, transizioni, server islands e import immagini. Non è un analizzatore generale di flusso dati: nuove integrazioni/configurazioni richiedono rivalutazione.
+- `MAINTENANCE_MODE=true` ferma API, cron HTTP e job scheduled; gli asset statici possono essere serviti prima del Worker. Entrambi i Worker storico e corrente condividono lo stesso D1: fermarli entrambi e drenare richieste già avviate prima del backup finale/migrazione. Lasciare lo storico in manutenzione dopo la riapertura del corrente. Nessuna manutenzione attivata da questa sessione.
+- Preparatore offline rifiuta schema/tracking inattesi, completa l'unico indice0006 mancante, genera registro baseline0001–0007 e prova0008–0010 con tutti i valori storici/sequenze invariati. Test per schema alterato e registrazione ripetuta. Il comando Wrangler migrations list può creare il registro: non usarlo come ricognizione read-only.
+- Backup privato7settembre, hash15bd860d976f906802cc00a947f53ae139aa464a357928cf225eb0f286ba0fc6; restore/preservazione/FK/integrità PASS. SQL baseline generato privatamente e non eseguito sul remoto.
+- npm ci,24 test, check senza errori, build, D1 e smoke PASS. Browser con D1 sintetico: registrazione201, import2nuove/1rifiutata, retry0nuove/2duplicate; testo HTML non eseguito; export da impostazioni e transazioni riusciti. Quattro warning Svelte preesistenti/emersi dal checker aggiornato, nove hint Astro.
+- Preflight remoto conferma banca automatica non configurata e quattro secret mancanti sul Worker; schema e tracking ancora legacy. Credenziali bancarie valide solo nel file locale privato. Resend: domanda all'utente in attesa; nessun invio email o consenso bancario. Produzione non aggiornata.
