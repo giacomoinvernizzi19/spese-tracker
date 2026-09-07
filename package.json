@@ -18,34 +18,42 @@
     "cap:build": "npm run build && npx cap sync",
     "test": "node scripts/test.mjs",
     "db:local": "wrangler d1 migrations apply spese-tracker-db --local",
-    "check": "astro check && svelte-check --tsconfig ./tsconfig.json",
+    "check": "node scripts/astro-security.mjs && astro check && svelte-check --tsconfig ./tsconfig.json",
     "test:d1": "node scripts/test-d1.mjs",
     "smoke:runtime": "node scripts/smoke-runtime.mjs",
     "preflight": "node scripts/preflight.mjs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.6.12",
-    "@astrojs/svelte": "^7.2.4",
+    "@astrojs/cloudflare": "^12.6.13",
+    "@astrojs/svelte": "^7.2.5",
     "@tailwindcss/vite": "^4.1.18",
-    "astro": "^5.16.6",
+    "astro": "^5.18.2",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "entities": "6.0.1",
-    "resend": "^6.7.0",
-    "svelte": "^5.46.1",
+    "resend": "^6.26.0",
+    "svelte": "^5.57.0",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
+    "@astrojs/compiler": "2.13.1",
     "@cloudflare/workers-types": "5.20260903.1",
     "@types/bcryptjs": "^2.4.6",
+    "@types/node": "22.20.1",
     "dotenv-cli": "^11.0.0",
+    "esbuild": "0.28.1",
+    "miniflare": "4.20260722.1",
     "svelte-check": "4.7.6",
     "wrangler": "4.115.0"
   },
   "overrides": {
-    "wrangler": "$wrangler"
+    "wrangler": "$wrangler",
+    "miniflare": {
+      "undici": "7.29.0"
+    },
+    "esbuild@0.27.7": "0.28.1"
   }
 }

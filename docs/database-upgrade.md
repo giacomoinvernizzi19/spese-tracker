@@ -22,8 +22,12 @@ The original checkout's May 2026 password UI changes were recovered into the imp
 
 ## Release checks
 
-`npm run check`, `npm test`, `npm run test:d1`, `npm run build` and `npm run smoke:runtime` exercise types, ledger services, real local D1 and the bundled Worker including scheduled events. The web check excludes the unused native Capacitor configuration. The current package set does not include Astro/Svelte full type checkers; approval to add them and update Wrangler was requested separately.
+`npm run check`, `npm test`, `npm run test:d1`, `npm run build` and `npm run smoke:runtime` exercise types, ledger services, real local D1 and the bundled Worker including scheduled events. The web check excludes the unused native Capacitor configuration. Astro and Svelte full type checkers are installed; npm run check also enforces the reviewed framework feature boundary.
 
 `npm run preflight` requires the personal account's CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN in the process environment. It reads Worker settings, secret names and D1 schema/tracking through Cloudflare's API. A nonzero exit means stop; it performs no deployment or schema/secret write. Never paste credentials in command arguments or commit `.env`/`.dev.vars`. A passing report is one release input, not automatic authorization: the private restore test, migration tracking baseline, bank consent and explicit production approval remain required.
 
 GitHub Actions runs from a clean checkout using the lockfile, builds the app and verifies types, service tests, local D1 and a fresh ephemeral Worker smoke. No Cloudflare/bank credentials are configured in CI. Playwright browser checks remain local via the configured MCP until a project browser-runner dependency is approved; the runtime smoke is not a browser test.
+
+## September7 release preparation
+
+Use [the reviewed release sequence](security-2026-09-07.md) and `python3 scripts/prepare-database-upgrade.py <private-export.sql> <new-baseline.sql>` before registration. Both historical and current Workers share D1 and must stop writes; drain old in-flight handlers. Never mark0006 applied before creating its missing index. Export again after writer quiescence. The preparator is offline only; generated SQL and remote migration/deploy require release approval. After0008 rollback must restore a matching database and application version, not just old code.
