@@ -308,4 +308,4 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 ## Recupero accesso proprietario — 4 ottobre 2026
 
 - Servizio email ancora non configurato. Su richiesta del proprietario bloccato al login, emesso un token di recupero monouso per il suo account, con durata15minuti, aperto direttamente nel browser locale senza stampare il valore.
-- Usato il normale endpoint di reset esistente: la password resta invariata fino alla conferma dell’utente; il reset riuscito revoca le sessioni. Nessuna modifica a codice, dati contabili o credenziali bancarie. Conferma del reset utente ancora pendente.
+- Aperto il normale modulo di reset esistente, che userà l’endpoint ordinario al suo invio: la password resta invariata fino alla conferma dell’utente; il reset riuscito revoca le sessioni. Nessuna modifica a codice, dati contabili o credenziali bancarie. Conferma del reset utente ancora pendente.
