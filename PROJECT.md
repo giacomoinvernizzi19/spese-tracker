@@ -304,3 +304,8 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - L’utente ha autorizzato esplicitamente il trasferimento dei tre segreti al Worker thinkin-about-money. Upload riuscito; verifica nomi remoti e autenticazione provider PASS. Fineco/Revolut disponibili, Trade Republic assente da IT/DE.
 - Versione attiva dopo upload: `adf8ab92-f721-47a6-b073-3602faa41287`. Variabili remote: manutenzione false, automazione bancaria false. Preflight segnala soltanto RESEND_API_KEY mancante.
 - Consenso e sincronizzazione dei conti personali ancora da eseguire dalla UI. Nessun movimento scaricato o importato durante la configurazione. Le note sul blocco di approvazione precedente sono superate da questa autorizzazione.
+
+## Recupero accesso proprietario — 4 ottobre 2026
+
+- Servizio email ancora non configurato. Su richiesta del proprietario bloccato al login, emesso un token di recupero monouso per il suo account, con durata15minuti, aperto direttamente nel browser locale senza stampare il valore.
+- Usato il normale endpoint di reset esistente: la password resta invariata fino alla conferma dell’utente; il reset riuscito revoca le sessioni. Nessuna modifica a codice, dati contabili o credenziali bancarie. Conferma del reset utente ancora pendente.
