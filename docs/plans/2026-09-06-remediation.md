@@ -162,3 +162,7 @@ Fuori scope: conversioni valutarie, app native, notifiche push, export PDF, rede
 - Credenziali GoCardless inserite privatamente e autenticazione PASS; catalogo autenticato conferma Fineco/Revolut, Trade Republic assente in IT/DE. Restano configurazione Resend e consenso/prova live Fineco/Revolut.
 - Aggiornamento autorizzato ed eseguito: Wrangler4.115 stabile, check Astro/Svelte senza errori, npm ci e prove runtime PASS. Restano3 warning accessibilità del componente QuickAdd non utilizzato e24 segnalazioni npm audit da analizzare prima del rilascio. Smoke Playwright CI necessita di un runner di progetto; al momento è una verifica locale MCP.
 - Produzione invariata. Per rilasciare: riconciliare tracking storicoD1, preflight, approvazione sul risultato e applicazione migrazioni/deploy, poi consensi/prova live. Non confondere codice pronto con P1 banche operativamente conclusa.
+
+## Avanzamento sicurezza — 7 settembre2026
+
+Correzioni e valutazione in [security-2026-09-07.md](../security-2026-09-07.md): audit24→4 advisory residue motivate; import/export Excel verificati con versione corretta.24test e check/build/D1/smoke PASS. Preparati manutenzione API/job e generatore offline SQL baseline; restore backup aggiornato preserva dati/sequenze. Due Worker condividono D1, da fermare e drenare prima del rilascio. Nessun merge/migrazione/deploy. Resta risposta utente su Resend e approvazione del rilascio concreto, poi consenso Fineco/Revolut.

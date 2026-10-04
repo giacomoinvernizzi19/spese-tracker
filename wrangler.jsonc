@@ -15,7 +15,8 @@
 	},
 	"vars": {
 		"APP_URL": "https://thinkin-about-money.g-invernizzi-jm.workers.dev",
-        "BANK_SYNC_ENABLED": "false"
+        "BANK_SYNC_ENABLED": "false",
+        "MAINTENANCE_MODE": "false"
 	},
 	"d1_databases": [
 		{

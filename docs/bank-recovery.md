@@ -2,7 +2,9 @@
 
 ## Configurazione verificata
 
-Il vecchio Worker `spese-tracker` contiene i nomi dei secret GoCardless e Resend, ma Cloudflare non restituisce i valori. Il Worker attuale `thinkin-about-money` contiene solo CRON_SECRET. Nessuno dei due elenca ENCRYPTION_KEY. Nel backup privato verificato, tutti i sei requisition ID sono UUID in chiaro; le due liste account presenti sono JSON in chiaro. Non risultano ciphertext da recuperare in questi campi.
+Verifica del 4 ottobre 2026: i tre secret NORDIGEN_SECRET_ID, NORDIGEN_SECRET_KEY ed ENCRYPTION_KEY sono configurati sul Worker attuale `thinkin-about-money`, dopo autorizzazione esplicita dell’utente. Autenticazione GoCardless verificata; Fineco/Revolut disponibili, Trade Republic assente dal catalogo IT/DE. Automazione bancaria disabilitata. Manca RESEND_API_KEY per il recupero password. Il vecchio Worker resta in manutenzione senza cron.
+
+Il consenso sui conti reali e la prima sincronizzazione non sono ancora stati completati. Le istruzioni locali sotto descrivono la procedura già eseguita: non rigenerare le chiavi per collegare i conti.
 
 ## Preparazione locale
 
@@ -11,9 +13,9 @@ Il vecchio Worker `spese-tracker` contiene i nomi dei secret GoCardless e Resend
 3. Conserva anche ENCRYPTION_KEY nel gestore password. Nessun segreto viene pubblicato dallo script e nessun Worker viene modificato.
 4. Verificare il catalogo autenticato IT/DE: Fineco, Revolut e disponibilità Trade Republic. Il selettore pubblico non confermava Trade Republic; non inventare supporto sulla base dei mock.
 
-## Rilascio e consenso, dopo approvazione
+## Consenso e prima sincronizzazione
 
-Configurare i tre valori sul Worker corretto, dopo preflight/migrazioni. Eseguire il consenso Fineco/Revolut dalla UI: il callback richiede sessione del proprietario e verifica riferimento, banca e termini del consenso remoto. Le scadenze derivano dall'accettazione del consenso e non dalla data del callback. I dati storici riconoscibili vengono cifrati quando il consenso viene verificato.
+I tre valori sono già configurati e le migrazioni applicate. Dalla pagina Banche selezionare **+ Collega Nuovo Conto**, scegliere Fineco o Revolut e completare il consenso sul sito della banca. Ripetere per l’altro conto. Il callback richiede sessione del proprietario e verifica riferimento, banca e termini del consenso remoto. Le scadenze derivano dall'accettazione del consenso e non dalla data del callback. I dati storici riconoscibili vengono cifrati quando il consenso viene verificato.
 
 La prima sincronizzazione senza intervallo usa lo storico concesso; le successive ripartono dall'ultimo giorno coperto con sette giorni di rilettura. Un conto fallito non avanza; 429 blocca anche la chiamata successiva ai dettagli. Gli intervalli fuori dalla disponibilità storica sono segnalati. Una selezione esplicita dell'utente definisce il periodo desiderato.
 

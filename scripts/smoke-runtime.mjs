@@ -26,6 +26,9 @@ try{
     await new Promise(resolve=>setTimeout(resolve,500));
   }
   assert.ok(ready,'Local worker did not start');
+  for (const path of ['/_image?href=/api/transactions','/%5fimage?href=https://example.test','/x/../_image','/_server-islands/test']) {
+    assert.equal((await fetch(origin+path)).status,404);
+  }
   assert.equal((await fetch(`${origin}/api/transactions`)).status,401);
   assert.equal((await fetch(`${origin}/api/cron/daily`,{method:'POST',headers:{'Content-Type':'application/json'}})).status,401);
   assert.equal((await fetch(`${origin}/__scheduled`)).status,200);

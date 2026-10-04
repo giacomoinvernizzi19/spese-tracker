@@ -3,6 +3,7 @@ type D1Database = import('@cloudflare/workers-types').D1Database;
 interface WorkerEnv {
   DB: D1Database;
   APP_URL: string;
+  MAINTENANCE_MODE?: string;
   CRON_SECRET?: string; BANK_SYNC_ENABLED?: string;
   ENCRYPTION_KEY?: string;
   RESEND_API_KEY?: string;

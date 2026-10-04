@@ -77,7 +77,10 @@ export class NordigenClient {
     let response:Response;
     try { response=await fetch(this.baseUrl+path,{...init,headers,signal:AbortSignal.timeout(20000)}); }
     catch { throw new ProviderError(503); }
-    if(!response.ok) throw new ProviderError(response.status,response.headers.get('Retry-After'));
+    if(!response.ok) {
+      console.warn('Bank provider rejected request', { resource: path.split('/')[1], status: response.status });
+      throw new ProviderError(response.status,response.headers.get('Retry-After'));
+    }
     if(response.status===204) return undefined as T;
     try { return await response.json() as T; } catch { throw new ProviderError(502); }
   }

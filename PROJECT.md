@@ -1,19 +1,23 @@
 # Thinkin' About Money - Project Context
 
-## Quick Context — verifica del 6 settembre 2026
+## Quick Context — verifica del 4 ottobre 2026
 
 - **What:** gestione spese personali, import Excel e integrazione bancaria.
 - **Stack:** Astro + Svelte + Cloudflare Workers/D1, confermato per il consolidamento.
-- **Status:** Codice P1/P2/P3 preparato nelle PR draft; tooling aggiornato e verificato localmente. Credenziali GoCardless nuove salvate privatamente e autenticazione verificata; consenso bancario, migrazioni remote e pubblicazione ancora da eseguire. Le marcature storiche "Done" sotto non certificano l'operatività attuale di budget, ricorrenze o bank sync.
+- **Status:** Sito aggiornato online il 4 ottobre, schema D1 migrato e tutti i valori storici preservati. Versione Worker `ecd34899-c014-47f2-b395-c4bf754063ce`, codice `8d1ea14`, dopo correzione errori provider. Worker storico in manutenzione senza cron. Tre credenziali bancarie caricate dopo autorizzazione esplicita e autenticazione GoCardless verificata; consenso bancario e Resend da completare. Excel corrente individuato, ancora da riconciliare senza duplicati. Dettagli in `docs/release-2026-10-04.md`. Le evidenze datate sotto descrivono la storia, non lo stato corrente.
 - **Piano corrente:** [Consolidamento P1/P2/P3](docs/plans/2026-09-06-remediation.md). Fineco e Revolut in P1, soltanto EUR; accesso GoCardless confermato dall'utente.
 - **Trade Republic:** interesse aggiuntivo dell'utente; Open Banking documentato, ma assente dai selettori pubblici GoCardless IT/DE verificati il 6 settembre 2026. Assente anche dal catalogo autenticato IT/DE verificato con le nuove credenziali; nessuna connessione effettuata.
-- **Rilevato:** schema remoto budget incompatibile con le API; vincolo `source` incompatibile con le ricorrenze; configurazione bancaria/cifratura/email da recuperare; cron senza collegamento `scheduled()` nel sorgente esaminato; typecheck non verde.
-- **Git/deploy:** `main` verificato a `a9778f6`; ultima versione pubblicata rilevata `81db52de` del 14 maggio 2026. Quattro modifiche locali preesistenti nel checkout originale sono da riconciliare separatamente, non incluse nella PR del piano.
+- **Prossimo lavoro:** importatore con scelta foglio Spese, confronto Excel/ledger e modello per competenza/cassa, correzioni e rimborsi; banche EUR con consenso e review; email e upgrade maggiore Astro. Non importare l'intero Excel sul ledger esistente.
+- **Git/deploy:** rilascio dal ramo `codex/spese-tracker-security`, PR9 aggiornata, controlli verdi. PR stack ancora aperte, nessun merge eseguito. Quattro modifiche locali preesistenti nel checkout originale preservate.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
+| `docs/release-2026-10-04.md` | Rilascio autorizzato, aggiornamento advisory e riconciliazione con Spese Giacomo |
+| `docs/security-2026-09-07.md` | Valutazione advisory, eccezioni e sequenza concreta di rilascio |
+| `scripts/prepare-database-upgrade.py` | Confronto schema offline, prova preservazione e SQL baseline |
+| `src/lib/worker-boundary.ts`, `scripts/astro-security.mjs` | Manutenzione API/job e limiti delle funzionalità framework verificate |
 | `docs/database-upgrade.md` | Procedura di upgrade, preservazione e tracking migrazioni |
 | `migrations/0001_initial.sql`, `migrations/0008_ledger_integrity.sql` | Baseline ordinata e migrazione ledger/budget |
 | `scripts/test.mjs`, `scripts/test-d1.mjs`, `tests/` | Test con Node/esbuild e runtime D1 locale |
@@ -27,7 +31,7 @@
 
 - `npm run dev`: sviluppo locale.
 - `npm run build`: build applicazione.
-- `npm run check`: Astro check e svelte-check; copre pagine, componenti e TypeScript. Zero errori; tre avvisi accessibilità nel componente QuickAdd non utilizzato.
+- `npm run check`: Astro check e svelte-check; copre pagine, componenti e TypeScript. Zero errori; quattro avvisi accessibilità nei componenti QuickAdd e TransactionList.
 - `npm run deploy`: pubblicazione, da eseguire solo dopo verifica e approvazione del rilascio.
 - `npm test`: test automatici schema e API budget; `node scripts/test-d1.mjs`: vincoli e rollback nel runtime D1. Test di baseline introdotti il 6 settembre 2026. Browser test tramite Playwright MCP configurato per il workspace.
 
@@ -194,6 +198,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 | Data | File Modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-09-07 | Dipendenze, manutenzione, guard Astro, preparatore migrazioni | PASS | 24 test/check/build/D1/smoke e browser PASS; 4 advisory residue motivate; review senza blocchi |
 | 2026-09-06 | Dipendenze, checker Astro/Svelte, smoke isolato, tipi banca e tooltip | WARN | Review senza blocchi; verifiche locali PASS; avvisi accessibilità e audit dipendenze documentati |
 | 2026-09-06 | Componenti Svelte, grafici, report, pulizia debug | PASS | 19 test/check/build e Playwright locali PASS; finding review corretti; CI PASS |
 | 2026-09-06 | Pipeline, check web, preflight e smoke isolato | PASS | Typecheck e runtime PASS; preflight rileva blocchi reali, review finding corretti |
@@ -208,7 +213,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 ---
 
-**Last updated:** 2026-09-06 (tooling e nuove credenziali verificati; produzione invariata)
+**Last updated:** 2026-09-07 (sicurezza e preparazione rilascio verificate; produzione invariata)
 
 ## Evidenze P1 baseline — 6 settembre 2026
 
@@ -269,3 +274,46 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - Restano tre warning accessibilità in QuickAdd, privo di consumer, e nove hint Astro. npm audit segnala24 dipendenze vulnerabili (14high,8moderate,2low), incluse dipendenze applicative preesistenti Astro/XLSX: questo aggiornamento non certifica la chiusura della sicurezza. Analizzare esposizione e aggiornamenti separatamente prima del rilascio; non eseguito audit fix --force.
 - Nuove credenziali GoCardless create e salvate dall'utente in .dev.vars privato e nel gestore password. Autenticazione reale PASS; Fineco e Revolut presenti nel catalogo IT, Trade Republic assente in IT/DE. Non committare segreti; nessun consenso o dato bancario scaricato. ENCRYPTION_KEY è locale e deve essere conservata prima del rilascio.
 - Produzione invariata. Restano migrazioni/tracking D1, configurazione segreti sul Worker (incluso Resend), autorizzazione al rilascio e prova manuale con consenso delle banche.
+
+## Sicurezza e preparazione rilascio — 7 settembre 2026
+
+- Dettagli e fonti in `docs/security-2026-09-07.md`. Audit24→4 package nodes (2high,2low), non audit zero. SheetJS0.20.3 ufficiale, Svelte/Resend e dipendenze compatibili aggiornati. Wrangler stabile conservato; Undici7.29.0 ed esbuild0.28.1 correggono dipendenze transitive. Test/compiler/types espliciti per non dipendere da hoisting.
+- Decisione: mantenere Astro5.18.2 per questo rilascio con eccezioni motivate sui percorsi assenti e un guard delle feature dirette; l'upgrade major resta manutenzione separata. `/_image` e `/_server-islands` disabilitati prima della delega, servizio immagini passthrough; guard AST su define:vars, spread, slot dinamici, transizioni, server islands e import immagini. Non è un analizzatore generale di flusso dati: nuove integrazioni/configurazioni richiedono rivalutazione.
+- `MAINTENANCE_MODE=true` ferma API, cron HTTP e job scheduled; gli asset statici possono essere serviti prima del Worker. Entrambi i Worker storico e corrente condividono lo stesso D1: fermarli entrambi e drenare richieste già avviate prima del backup finale/migrazione. Lasciare lo storico in manutenzione dopo la riapertura del corrente. Nessuna manutenzione attivata da questa sessione.
+- Preparatore offline rifiuta schema/tracking inattesi, completa l'unico indice0006 mancante, genera registro baseline0001–0007 e prova0008–0010 con tutti i valori storici/sequenze invariati. Test per schema alterato e registrazione ripetuta. Il comando Wrangler migrations list può creare il registro: non usarlo come ricognizione read-only.
+- Backup privato7settembre, hash15bd860d976f906802cc00a947f53ae139aa464a357928cf225eb0f286ba0fc6; restore/preservazione/FK/integrità PASS. SQL baseline generato privatamente e non eseguito sul remoto.
+- npm ci,24 test, check senza errori, build, D1 e smoke PASS. Browser con D1 sintetico: registrazione201, import2nuove/1rifiutata, retry0nuove/2duplicate; testo HTML non eseguito; export da impostazioni e transazioni riusciti. Quattro warning Svelte preesistenti/emersi dal checker aggiornato, nove hint Astro.
+- Preflight remoto conferma banca automatica non configurata e quattro secret mancanti sul Worker; schema e tracking ancora legacy. Credenziali bancarie valide solo nel file locale privato. Resend: domanda all'utente in attesa; nessun invio email o consenso bancario. Produzione non aggiornata.
+
+## Audit Log — 4 ottobre 2026
+
+| Data | File modificati | CI Result | Note |
+|------|-----------------|-----------|------|
+| 2026-10-04 | PROJECT.md, docs/release-2026-10-04.md, docs/bank-recovery.md | PASS | Segreti remoti e autenticazione verificati; review documenti senza segreti; consenso e sync pendenti. |
+| 2026-10-04 | package.json, package-lock.json, PROJECT.md, docs/release-2026-10-04.md | PASS | Review indipendenti; check, 24 test, build, D1, runtime, Actions e smoke browser live. Banche/email non ancora operative. |
+
+## Decisions e Learnings — 4 ottobre 2026
+
+- Rilascio autorizzato dall'utente: manutenzione e stop cron su entrambi i Worker prima del backup, baseline e tre migrazioni, confronto completo dopo migrazione, riapertura del solo Worker corrente. Tutti i valori storici invariati.
+- Patch compatibili sulle dipendenze seguendo PR9; audit6 nodi residui con eccezioni di esposizione documentate. L'upgrade maggiore Astro resta da pianificare.
+- Spese Giacomo corrente trovato in OneDrive, distinto dalle copie2024/2025. Summary è il primo foglio: l'importatore attuale non seleziona Spese. Excel distingue competenza/cassa, contiene correzioni e valori negativi; il modello corrente non è ancora equivalente.
+- Pubblicazione effettuata senza invio dei segreti bancari: approvazione automatica richiede consenso esplicito per trasferirli al Worker nominato. Nessun aggiramento; domanda all'utente pendente.
+
+## Configurazione bancaria — 4 ottobre 2026
+
+- L’utente ha autorizzato esplicitamente il trasferimento dei tre segreti al Worker thinkin-about-money. Upload riuscito; verifica nomi remoti e autenticazione provider PASS. Fineco/Revolut disponibili, Trade Republic assente da IT/DE.
+- Versione attiva dopo upload: `adf8ab92-f721-47a6-b073-3602faa41287`. Variabili remote: manutenzione false, automazione bancaria false. Preflight segnala soltanto RESEND_API_KEY mancante.
+- Consenso e sincronizzazione dei conti personali ancora da eseguire dalla UI. Nessun movimento scaricato o importato durante la configurazione. Le note sul blocco di approvazione precedente sono superate da questa autorizzazione.
+
+## Recupero accesso proprietario — 4 ottobre 2026
+
+- Servizio email ancora non configurato. Su richiesta del proprietario bloccato al login, emesso un token di recupero monouso per il suo account, con durata15minuti, aperto direttamente nel browser locale senza stampare il valore.
+- Aperto il normale modulo di reset esistente, che userà l’endpoint ordinario al suo invio: la password resta invariata fino alla conferma dell’utente; il reset riuscito revoca le sessioni. Nessuna modifica a codice, dati contabili o credenziali bancarie. Conferma del reset utente ancora pendente.
+
+## Diagnosi catalogo bancario — 4 ottobre 2026
+
+- Riprodotto nel browser autenticato: catalogo500 causato da GoCardless token403 dal Worker. Le stesse credenziali dal Mac restituiscono200. Diagnostica transitoria ha confermato risposta JSON con restrizione IP, senza registrare il corpo; rimossa dopo la diagnosi. Whitelist IPv4-only osservata nella creazione è la causa sospetta, configurazione corrente/IPv6 da verificare nel portale con l’utente.
+- Precedente663b94e: il wrapper API nascondeva ogni ProviderError come500 generico. Ora distingue autenticazione provider rifiutata, throttling e indisponibilità, restituendo502/503 con no-store e messaggi sicuri. Il client registra soltanto risorsa e status, mai URL completo, ID conto, payload o token. Percorsi affini collegamento/disconnessione riusano il wrapper; sync conserva i propri checkpoint/backoff.
+- Nuovo test di integrazione del catalogo copre401/403/429/500, nessun payload o segreto esposto e arresto prima del catalogo quando fallisce l’autenticazione. Nessun consenso né movimento bancario importato. Modifica whitelist esterna ancora pendente.
+
+- Validazione gestione errori:25test, check e build PASS; continuous-improvement PASS. Pubblicato8d1ea14, Worker `ecd34899-c014-47f2-b395-c4bf754063ce`. Ripristino collegamento ancora bloccato dalla whitelist del provider; non dichiarato risolto dal solo aggiornamento dei messaggi.
