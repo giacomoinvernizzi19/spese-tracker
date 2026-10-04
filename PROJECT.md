@@ -4,7 +4,7 @@
 
 - **What:** gestione spese personali, import Excel e integrazione bancaria.
 - **Stack:** Astro + Svelte + Cloudflare Workers/D1, confermato per il consolidamento.
-- **Status:** Sito aggiornato online il 4 ottobre, schema D1 migrato e tutti i valori storici preservati. Versione Worker `07bf8855-3516-4bfe-9f16-7ce3ba89edb9`, codice `07a12bf`. Worker storico in manutenzione senza cron. Caricamento credenziali bancarie in attesa di autorizzazione esplicita richiesta dal controllo automatico; consenso bancario e Resend da completare. Excel corrente individuato, ancora da riconciliare senza duplicati. Dettagli in `docs/release-2026-10-04.md`. Le evidenze datate sotto descrivono la storia, non lo stato corrente.
+- **Status:** Sito aggiornato online il 4 ottobre, schema D1 migrato e tutti i valori storici preservati. Versione Worker `adf8ab92-f721-47a6-b073-3602faa41287` dopo upload segreti, codice `07a12bf`. Worker storico in manutenzione senza cron. Tre credenziali bancarie caricate dopo autorizzazione esplicita e autenticazione GoCardless verificata; consenso bancario e Resend da completare. Excel corrente individuato, ancora da riconciliare senza duplicati. Dettagli in `docs/release-2026-10-04.md`. Le evidenze datate sotto descrivono la storia, non lo stato corrente.
 - **Piano corrente:** [Consolidamento P1/P2/P3](docs/plans/2026-09-06-remediation.md). Fineco e Revolut in P1, soltanto EUR; accesso GoCardless confermato dall'utente.
 - **Trade Republic:** interesse aggiuntivo dell'utente; Open Banking documentato, ma assente dai selettori pubblici GoCardless IT/DE verificati il 6 settembre 2026. Assente anche dal catalogo autenticato IT/DE verificato con le nuove credenziali; nessuna connessione effettuata.
 - **Prossimo lavoro:** importatore con scelta foglio Spese, confronto Excel/ledger e modello per competenza/cassa, correzioni e rimborsi; banche EUR con consenso e review; email e upgrade maggiore Astro. Non importare l'intero Excel sul ledger esistente.
@@ -289,6 +289,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 | Data | File modificati | CI Result | Note |
 |------|-----------------|-----------|------|
+| 2026-10-04 | PROJECT.md, docs/release-2026-10-04.md, docs/bank-recovery.md | PASS | Segreti remoti e autenticazione verificati; review documenti senza segreti; consenso e sync pendenti. |
 | 2026-10-04 | package.json, package-lock.json, PROJECT.md, docs/release-2026-10-04.md | PASS | Review indipendenti; check, 24 test, build, D1, runtime, Actions e smoke browser live. Banche/email non ancora operative. |
 
 ## Decisions e Learnings — 4 ottobre 2026
@@ -297,3 +298,9 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - Patch compatibili sulle dipendenze seguendo PR9; audit6 nodi residui con eccezioni di esposizione documentate. L'upgrade maggiore Astro resta da pianificare.
 - Spese Giacomo corrente trovato in OneDrive, distinto dalle copie2024/2025. Summary è il primo foglio: l'importatore attuale non seleziona Spese. Excel distingue competenza/cassa, contiene correzioni e valori negativi; il modello corrente non è ancora equivalente.
 - Pubblicazione effettuata senza invio dei segreti bancari: approvazione automatica richiede consenso esplicito per trasferirli al Worker nominato. Nessun aggiramento; domanda all'utente pendente.
+
+## Configurazione bancaria — 4 ottobre 2026
+
+- L’utente ha autorizzato esplicitamente il trasferimento dei tre segreti al Worker thinkin-about-money. Upload riuscito; verifica nomi remoti e autenticazione provider PASS. Fineco/Revolut disponibili, Trade Republic assente da IT/DE.
+- Versione attiva dopo upload: `adf8ab92-f721-47a6-b073-3602faa41287`. Variabili remote: manutenzione false, automazione bancaria false. Preflight segnala soltanto RESEND_API_KEY mancante.
+- Consenso e sincronizzazione dei conti personali ancora da eseguire dalla UI. Nessun movimento scaricato o importato durante la configurazione. Le note sul blocco di approvazione precedente sono superate da questa autorizzazione.
