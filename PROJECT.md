@@ -285,7 +285,7 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - npm ci,24 test, check senza errori, build, D1 e smoke PASS. Browser con D1 sintetico: registrazione201, import2nuove/1rifiutata, retry0nuove/2duplicate; testo HTML non eseguito; export da impostazioni e transazioni riusciti. Quattro warning Svelte preesistenti/emersi dal checker aggiornato, nove hint Astro.
 - Preflight remoto conferma banca automatica non configurata e quattro secret mancanti sul Worker; schema e tracking ancora legacy. Credenziali bancarie valide solo nel file locale privato. Resend: domanda all'utente in attesa; nessun invio email o consenso bancario. Produzione non aggiornata.
 
-## Audit Log
+## Audit Log — 4 ottobre 2026
 
 | Data | File modificati | CI Result | Note |
 |------|-----------------|-----------|------|
