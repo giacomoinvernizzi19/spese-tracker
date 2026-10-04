@@ -1,6 +1,7 @@
 import type { APIRoute, APIContext } from 'astro';
 import { getAuthUser, type User } from './auth';
 import { InputError, record } from './validation';
+import { ProviderError } from './nordigen';
 
 export const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 export async function body(request: Request) {
@@ -17,6 +18,14 @@ export function authenticated(handler: Handler): APIRoute {
       return await handler(context,db,user);
     } catch (error) {
       if (error instanceof InputError) return json({error:error.message},error.status);
+      if (error instanceof ProviderError) {
+        const message = error.status === 401 || error.status === 403
+          ? 'GoCardless ha rifiutato l’accesso dal server. Verifica le credenziali e gli IP consentiti nel portale GoCardless.'
+          : error.status === 429
+            ? 'Limite richieste del servizio bancario raggiunto. Attendi prima di riprovare.'
+            : 'Servizio bancario temporaneamente non disponibile. Riprova più tardi.';
+        return json({error:message}, error.status === 429 || error.status === 503 ? 503 : 502);
+      }
       console.error('Request failed', { path: new URL(context.request.url).pathname, kind: error instanceof Error ? error.name : 'UnknownError' });
       return json({error:'Operazione non riuscita. Riprova.'},500);
     }

@@ -309,3 +309,9 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 
 - Servizio email ancora non configurato. Su richiesta del proprietario bloccato al login, emesso un token di recupero monouso per il suo account, con durata15minuti, aperto direttamente nel browser locale senza stampare il valore.
 - Aperto il normale modulo di reset esistente, che userà l’endpoint ordinario al suo invio: la password resta invariata fino alla conferma dell’utente; il reset riuscito revoca le sessioni. Nessuna modifica a codice, dati contabili o credenziali bancarie. Conferma del reset utente ancora pendente.
+
+## Diagnosi catalogo bancario — 4 ottobre 2026
+
+- Riprodotto nel browser autenticato: catalogo500 causato da GoCardless token403 dal Worker. Le stesse credenziali dal Mac restituiscono200. Diagnostica transitoria ha confermato risposta JSON con restrizione IP, senza registrare il corpo; rimossa dopo la diagnosi. Whitelist IPv4-only osservata nella creazione è la causa sospetta, configurazione corrente/IPv6 da verificare nel portale con l’utente.
+- Precedente663b94e: il wrapper API nascondeva ogni ProviderError come500 generico. Ora distingue autenticazione provider rifiutata, throttling e indisponibilità, restituendo502/503 con no-store e messaggi sicuri. Il client registra soltanto risorsa e status, mai URL completo, ID conto, payload o token. Percorsi affini collegamento/disconnessione riusano il wrapper; sync conserva i propri checkpoint/backoff.
+- Nuovo test di integrazione del catalogo copre401/403/429/500, nessun payload o segreto esposto e arresto prima del catalogo quando fallisce l’autenticazione. Nessun consenso né movimento bancario importato. Modifica whitelist esterna ancora pendente.
