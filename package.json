@@ -52,7 +52,7 @@
   "overrides": {
     "wrangler": "$wrangler",
     "miniflare": {
-      "undici": "7.29.0"
+      "undici": "7.29.1"
     },
     "esbuild@0.27.7": "0.28.1"
   }

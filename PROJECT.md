@@ -14,6 +14,7 @@
 
 | File | Purpose |
 |------|---------|
+| `docs/release-2026-10-04.md` | Rilascio autorizzato, aggiornamento advisory e riconciliazione con Spese Giacomo |
 | `docs/security-2026-09-07.md` | Valutazione advisory, eccezioni e sequenza concreta di rilascio |
 | `scripts/prepare-database-upgrade.py` | Confronto schema offline, prova preservazione e SQL baseline |
 | `src/lib/worker-boundary.ts`, `scripts/astro-security.mjs` | Manutenzione API/job e limiti delle funzionalità framework verificate |
