@@ -1,14 +1,14 @@
 # Thinkin' About Money - Project Context
 
-## Quick Context — verifica del 6 settembre 2026
+## Quick Context — verifica del 4 ottobre 2026
 
 - **What:** gestione spese personali, import Excel e integrazione bancaria.
 - **Stack:** Astro + Svelte + Cloudflare Workers/D1, confermato per il consolidamento.
-- **Status:** Codice P1/P2/P3 preparato nelle PR draft; tooling aggiornato e verificato localmente. Credenziali GoCardless nuove salvate privatamente e autenticazione verificata; consenso bancario, migrazioni remote e pubblicazione ancora da eseguire. Le marcature storiche "Done" sotto non certificano l'operatività attuale di budget, ricorrenze o bank sync.
+- **Status:** Sito aggiornato online il 4 ottobre, schema D1 migrato e tutti i valori storici preservati. Versione Worker `07bf8855-3516-4bfe-9f16-7ce3ba89edb9`, codice `07a12bf`. Worker storico in manutenzione senza cron. Caricamento credenziali bancarie in attesa di autorizzazione esplicita richiesta dal controllo automatico; consenso bancario e Resend da completare. Excel corrente individuato, ancora da riconciliare senza duplicati. Dettagli in `docs/release-2026-10-04.md`. Le evidenze datate sotto descrivono la storia, non lo stato corrente.
 - **Piano corrente:** [Consolidamento P1/P2/P3](docs/plans/2026-09-06-remediation.md). Fineco e Revolut in P1, soltanto EUR; accesso GoCardless confermato dall'utente.
 - **Trade Republic:** interesse aggiuntivo dell'utente; Open Banking documentato, ma assente dai selettori pubblici GoCardless IT/DE verificati il 6 settembre 2026. Assente anche dal catalogo autenticato IT/DE verificato con le nuove credenziali; nessuna connessione effettuata.
-- **Rilevato:** schema remoto budget incompatibile con le API; vincolo `source` incompatibile con le ricorrenze; configurazione bancaria/cifratura/email da recuperare; cron senza collegamento `scheduled()` nel sorgente esaminato; typecheck non verde.
-- **Git/deploy:** `main` verificato a `a9778f6`; ultima versione pubblicata rilevata `81db52de` del 14 maggio 2026. Quattro modifiche locali preesistenti nel checkout originale sono da riconciliare separatamente, non incluse nella PR del piano.
+- **Prossimo lavoro:** importatore con scelta foglio Spese, confronto Excel/ledger e modello per competenza/cassa, correzioni e rimborsi; banche EUR con consenso e review; email e upgrade maggiore Astro. Non importare l'intero Excel sul ledger esistente.
+- **Git/deploy:** rilascio dal ramo `codex/spese-tracker-security`, PR9 aggiornata, controlli verdi. PR stack ancora aperte, nessun merge eseguito. Quattro modifiche locali preesistenti nel checkout originale preservate.
 
 ## Key Files
 
@@ -284,3 +284,16 @@ Usare il server MCP `playwright` configurato per Codex. Testare su Wrangler loca
 - Backup privato7settembre, hash15bd860d976f906802cc00a947f53ae139aa464a357928cf225eb0f286ba0fc6; restore/preservazione/FK/integrità PASS. SQL baseline generato privatamente e non eseguito sul remoto.
 - npm ci,24 test, check senza errori, build, D1 e smoke PASS. Browser con D1 sintetico: registrazione201, import2nuove/1rifiutata, retry0nuove/2duplicate; testo HTML non eseguito; export da impostazioni e transazioni riusciti. Quattro warning Svelte preesistenti/emersi dal checker aggiornato, nove hint Astro.
 - Preflight remoto conferma banca automatica non configurata e quattro secret mancanti sul Worker; schema e tracking ancora legacy. Credenziali bancarie valide solo nel file locale privato. Resend: domanda all'utente in attesa; nessun invio email o consenso bancario. Produzione non aggiornata.
+
+## Audit Log
+
+| Data | File modificati | CI Result | Note |
+|------|-----------------|-----------|------|
+| 2026-10-04 | package.json, package-lock.json, PROJECT.md, docs/release-2026-10-04.md | PASS | Review indipendenti; check, 24 test, build, D1, runtime, Actions e smoke browser live. Banche/email non ancora operative. |
+
+## Decisions e Learnings — 4 ottobre 2026
+
+- Rilascio autorizzato dall'utente: manutenzione e stop cron su entrambi i Worker prima del backup, baseline e tre migrazioni, confronto completo dopo migrazione, riapertura del solo Worker corrente. Tutti i valori storici invariati.
+- Patch compatibili sulle dipendenze seguendo PR9; audit6 nodi residui con eccezioni di esposizione documentate. L'upgrade maggiore Astro resta da pianificare.
+- Spese Giacomo corrente trovato in OneDrive, distinto dalle copie2024/2025. Summary è il primo foglio: l'importatore attuale non seleziona Spese. Excel distingue competenza/cassa, contiene correzioni e valori negativi; il modello corrente non è ancora equivalente.
+- Pubblicazione effettuata senza invio dei segreti bancari: approvazione automatica richiede consenso esplicito per trasferirli al Worker nominato. Nessun aggiramento; domanda all'utente pendente.
